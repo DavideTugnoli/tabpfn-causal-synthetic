@@ -1,0 +1,16 @@
+train_size,median,ci_lower,ci_upper,n_seeds,dataset,metric,metric_title,dataset_label
+20,0.13899814496474924,0.0915541321801098,0.1682332659005193,100,csuite_symprod_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite symprod simpson
+50,0.11465433954268658,0.08900932045104311,0.14840742213800293,100,csuite_symprod_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite symprod simpson
+100,0.08616707719669475,0.0759743735846496,0.0974422056870544,100,csuite_symprod_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite symprod simpson
+200,0.07844458980577965,0.06533191963063478,0.09359222612565021,100,csuite_symprod_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite symprod simpson
+500,0.06832949922934431,0.0571594518862134,0.07726650778541576,100,csuite_symprod_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite symprod simpson
+20,0.031666666666666676,0.027375000000000066,0.03441666666666682,100,csuite_symprod_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite symprod simpson
+50,0.02537499999999998,0.022875000000000034,0.026291666666666658,100,csuite_symprod_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite symprod simpson
+100,0.017625000000000016,0.014833333333333393,0.019958333333333314,100,csuite_symprod_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite symprod simpson
+200,0.012458333333333349,0.010833333333333417,0.013624999999999943,100,csuite_symprod_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite symprod simpson
+500,0.00808333333333329,0.006833333333333302,0.009041666666666656,100,csuite_symprod_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite symprod simpson
+20,0.02787500000000004,0.025000000000000133,0.03125,100,csuite_symprod_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite symprod simpson
+50,0.02537499999999998,0.021993749999999965,0.027500000000000024,100,csuite_symprod_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite symprod simpson
+100,0.019999999999999962,0.017500000000000016,0.023250000000000104,100,csuite_symprod_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite symprod simpson
+200,0.01649999999999996,0.014371875000000083,0.018750000000000044,100,csuite_symprod_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite symprod simpson
+500,0.014875000000000027,0.013000000000000012,0.016125,100,csuite_symprod_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite symprod simpson

@@ -1,0 +1,16 @@
+dataset,metric,metric_slug,train_size,n_conditions,n_pairs,statistic,p_value
+csuite_mixed_confounding,correlation_matrix_difference,correlation_matrix_difference,20,6,100,153.67642752562233,2.201748058322108e-31
+csuite_mixed_confounding,correlation_matrix_difference,correlation_matrix_difference,50,6,100,303.75180583646346,1.5631934795003264e-63
+csuite_mixed_confounding,correlation_matrix_difference,correlation_matrix_difference,100,6,100,322.9942611190819,1.1358627435005177e-67
+csuite_mixed_confounding,correlation_matrix_difference,correlation_matrix_difference,200,6,100,308.00543322848154,1.9026088184679273e-64
+csuite_mixed_confounding,correlation_matrix_difference,correlation_matrix_difference,500,6,100,309.5942857142859,8.662929334473247e-65
+csuite_mixed_confounding,k_marginal_tvd,2marginal,20,6,100,50.853587115666365,9.267119057470104e-10
+csuite_mixed_confounding,k_marginal_tvd,2marginal,50,6,100,128.79081190407408,4.296878629253921e-26
+csuite_mixed_confounding,k_marginal_tvd,2marginal,100,6,100,135.65891472868216,1.496581898391069e-27
+csuite_mixed_confounding,k_marginal_tvd,2marginal,200,6,100,181.35115813554455,2.753340790680724e-37
+csuite_mixed_confounding,k_marginal_tvd,2marginal,500,6,100,189.497142857143,5.0037801322376394e-39
+csuite_mixed_confounding,nnaa,nnaa,20,6,100,279.40409956076155,2.672965256598392e-58
+csuite_mixed_confounding,nnaa,nnaa,50,6,100,366.7220936957778,4.3871399577346455e-77
+csuite_mixed_confounding,nnaa,nnaa,100,6,100,372.2544514646756,2.821933946452392e-78
+csuite_mixed_confounding,nnaa,nnaa,200,6,100,308.4387521465368,1.5352016001613123e-64
+csuite_mixed_confounding,nnaa,nnaa,500,6,100,290.5472779369627,1.0779055883187743e-60

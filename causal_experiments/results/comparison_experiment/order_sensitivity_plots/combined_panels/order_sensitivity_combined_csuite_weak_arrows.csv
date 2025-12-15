@@ -1,0 +1,16 @@
+train_size,median,ci_lower,ci_upper,n_seeds,dataset,metric,metric_title,dataset_label
+20,0.19931530154117472,0.16401204299965566,0.21882166599283315,100,csuite_weak_arrows,correlation_matrix_difference,Correlation Matrix Difference,csuite weak arrows
+50,0.2057833192606407,0.17597542369530914,0.25948967714787613,100,csuite_weak_arrows,correlation_matrix_difference,Correlation Matrix Difference,csuite weak arrows
+100,0.166910889604083,0.15588740680396268,0.19828282486896057,100,csuite_weak_arrows,correlation_matrix_difference,Correlation Matrix Difference,csuite weak arrows
+200,0.11796432908185156,0.08873860217569768,0.1425428196119603,100,csuite_weak_arrows,correlation_matrix_difference,Correlation Matrix Difference,csuite weak arrows
+500,0.10545983721501484,0.09529132189659711,0.11453862720335738,100,csuite_weak_arrows,correlation_matrix_difference,Correlation Matrix Difference,csuite weak arrows
+20,0.009006944444444415,0.007846527777777949,0.00968749999999996,100,csuite_weak_arrows,k_marginal_tvd,k-Marginal Total Variation Distance,csuite weak arrows
+50,0.006770833333333309,0.005909722222222247,0.007014756944444375,100,csuite_weak_arrows,k_marginal_tvd,k-Marginal Total Variation Distance,csuite weak arrows
+100,0.00461111111111101,0.004097222222222224,0.005131944444444342,100,csuite_weak_arrows,k_marginal_tvd,k-Marginal Total Variation Distance,csuite weak arrows
+200,0.0037083333333332996,0.003083333333333396,0.004653124999999897,100,csuite_weak_arrows,k_marginal_tvd,k-Marginal Total Variation Distance,csuite weak arrows
+500,0.004027777777777894,0.003500000000000003,0.004451388888888991,100,csuite_weak_arrows,k_marginal_tvd,k-Marginal Total Variation Distance,csuite weak arrows
+20,0.016875000000000084,0.014999999999999902,0.019499999999999962,100,csuite_weak_arrows,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite weak arrows
+50,0.015249999999999986,0.013875000000000026,0.018000000000000016,100,csuite_weak_arrows,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite weak arrows
+100,0.015249999999999986,0.012624999999999997,0.01700000000000007,100,csuite_weak_arrows,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite weak arrows
+200,0.015625,0.013875000000000082,0.016874999999999918,100,csuite_weak_arrows,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite weak arrows
+500,0.014000000000000012,0.01200000000000001,0.016249999999999987,100,csuite_weak_arrows,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite weak arrows

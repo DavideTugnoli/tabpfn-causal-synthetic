@@ -1,0 +1,16 @@
+train_size,median,ci_lower,ci_upper,n_seeds,dataset,metric,metric_title,dataset_label
+20,0.1348434736039114,0.0976371196331906,0.16787656626212322,100,csuite_nonlin_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite nonlin simpson
+50,0.08372928236418956,0.06542433191878091,0.0922120207526046,100,csuite_nonlin_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite nonlin simpson
+100,0.07186868709676986,0.06286357653789496,0.0920812420336671,100,csuite_nonlin_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite nonlin simpson
+200,0.06596387407041354,0.0531261732140228,0.07509325194323362,100,csuite_nonlin_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite nonlin simpson
+500,0.05445996649649065,0.0476677798677329,0.0633389536625959,100,csuite_nonlin_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite nonlin simpson
+20,0.015624999999999972,0.014000000000000012,0.01766770833333333,100,csuite_nonlin_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite nonlin simpson
+50,0.018375000000000072,0.016162500000000024,0.021083333333333287,100,csuite_nonlin_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite nonlin simpson
+100,0.018166666666666748,0.01591666666666658,0.019750000000000018,100,csuite_nonlin_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite nonlin simpson
+200,0.012875000000000067,0.01162500000000001,0.014750000000000013,100,csuite_nonlin_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite nonlin simpson
+500,0.008791666666666711,0.0072916666666666815,0.009916666666666685,100,csuite_nonlin_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite nonlin simpson
+20,0.018000000000000016,0.016250000000000094,0.019749999999999934,100,csuite_nonlin_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite nonlin simpson
+50,0.020750000000000046,0.017749999999999988,0.024250000000000105,100,csuite_nonlin_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite nonlin simpson
+100,0.020999999999999908,0.017743749999999937,0.02425000000000005,100,csuite_nonlin_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite nonlin simpson
+200,0.01824999999999999,0.01574999999999993,0.02200000000000002,100,csuite_nonlin_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite nonlin simpson
+500,0.016124999999999945,0.013500000000000066,0.017749999999999932,100,csuite_nonlin_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite nonlin simpson

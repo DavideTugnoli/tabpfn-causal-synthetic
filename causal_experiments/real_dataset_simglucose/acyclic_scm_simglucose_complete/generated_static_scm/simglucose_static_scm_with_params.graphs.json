@@ -1,0 +1,378 @@
+{
+  "column_names": [
+    "action_CHO_g",
+    "glucose_kinetics_1",
+    "ins_action_prod_2",
+    "ka1",
+    "sto_liquid",
+    "kp3",
+    "ins_action_prod_1",
+    "subcut_insulin_1",
+    "m4",
+    "intestine",
+    "m1",
+    "subcut_glucose",
+    "f",
+    "kd",
+    "Vi",
+    "glucose_kinetics_2",
+    "sto_solid",
+    "ke2",
+    "Ib",
+    "kmin",
+    "m2",
+    "d",
+    "BW",
+    "kabs",
+    "subcut_insulin_2",
+    "insulin_kinetics",
+    "insulin_liver",
+    "CR",
+    "kmax",
+    "CF",
+    "action_insulin_U_per_min",
+    "kp1",
+    "ins_action_utilization",
+    "b",
+    "ka2",
+    "ke1",
+    "u2ss",
+    "Fsnc"
+  ],
+  "dag_dict": {
+    "16": [
+      28,
+      0
+    ],
+    "4": [
+      16,
+      28,
+      19,
+      33,
+      21,
+      0
+    ],
+    "9": [
+      16,
+      4,
+      23,
+      28,
+      19,
+      33,
+      21,
+      0
+    ],
+    "1": [
+      9,
+      15,
+      2,
+      12,
+      23,
+      22,
+      31,
+      5,
+      35,
+      17,
+      37
+    ],
+    "15": [],
+    "25": [
+      26,
+      7,
+      24,
+      10,
+      20,
+      8,
+      3,
+      34
+    ],
+    "32": [
+      25,
+      14,
+      18
+    ],
+    "6": [
+      25,
+      14
+    ],
+    "2": [
+      6
+    ],
+    "26": [],
+    "7": [
+      3,
+      13,
+      22,
+      30
+    ],
+    "24": [
+      7,
+      13,
+      34
+    ],
+    "11": [
+      1
+    ],
+    "22": [],
+    "14": [],
+    "18": [],
+    "37": [],
+    "12": [],
+    "23": [],
+    "28": [],
+    "19": [],
+    "33": [],
+    "21": [],
+    "3": [],
+    "34": [],
+    "13": [],
+    "31": [],
+    "5": [],
+    "35": [],
+    "17": [],
+    "10": [],
+    "20": [
+      8
+    ],
+    "8": [],
+    "36": [],
+    "27": [],
+    "29": [],
+    "0": [],
+    "30": [
+      22,
+      36,
+      27,
+      29,
+      0
+    ]
+  },
+  "cpdag_dict": {
+    "16": {
+      "parents": [
+        "28",
+        "0"
+      ],
+      "undirected": []
+    },
+    "4": {
+      "parents": [
+        "16",
+        "28",
+        "19",
+        "33",
+        "21",
+        "0"
+      ],
+      "undirected": []
+    },
+    "9": {
+      "parents": [
+        "16",
+        "4",
+        "23",
+        "28",
+        "19",
+        "33",
+        "21",
+        "0"
+      ],
+      "undirected": []
+    },
+    "1": {
+      "parents": [
+        "9",
+        "15",
+        "2",
+        "22",
+        "37",
+        "12",
+        "23",
+        "31",
+        "5",
+        "35",
+        "17"
+      ],
+      "undirected": [
+        "11"
+      ]
+    },
+    "15": {
+      "parents": [],
+      "undirected": []
+    },
+    "25": {
+      "parents": [
+        "26",
+        "7",
+        "24",
+        "3",
+        "34",
+        "10",
+        "20",
+        "8"
+      ],
+      "undirected": []
+    },
+    "32": {
+      "parents": [
+        "25",
+        "14",
+        "18"
+      ],
+      "undirected": []
+    },
+    "6": {
+      "parents": [
+        "25",
+        "14"
+      ],
+      "undirected": [
+        "2"
+      ]
+    },
+    "2": {
+      "parents": [],
+      "undirected": [
+        "6"
+      ]
+    },
+    "26": {
+      "parents": [],
+      "undirected": []
+    },
+    "7": {
+      "parents": [
+        "22",
+        "3",
+        "13",
+        "30"
+      ],
+      "undirected": []
+    },
+    "24": {
+      "parents": [
+        "7",
+        "34",
+        "13"
+      ],
+      "undirected": []
+    },
+    "11": {
+      "parents": [],
+      "undirected": [
+        "1"
+      ]
+    },
+    "22": {
+      "parents": [],
+      "undirected": []
+    },
+    "14": {
+      "parents": [],
+      "undirected": []
+    },
+    "18": {
+      "parents": [],
+      "undirected": []
+    },
+    "37": {
+      "parents": [],
+      "undirected": []
+    },
+    "12": {
+      "parents": [],
+      "undirected": []
+    },
+    "23": {
+      "parents": [],
+      "undirected": []
+    },
+    "28": {
+      "parents": [],
+      "undirected": []
+    },
+    "19": {
+      "parents": [],
+      "undirected": []
+    },
+    "33": {
+      "parents": [],
+      "undirected": []
+    },
+    "21": {
+      "parents": [],
+      "undirected": []
+    },
+    "3": {
+      "parents": [],
+      "undirected": []
+    },
+    "34": {
+      "parents": [],
+      "undirected": []
+    },
+    "13": {
+      "parents": [],
+      "undirected": []
+    },
+    "31": {
+      "parents": [],
+      "undirected": []
+    },
+    "5": {
+      "parents": [],
+      "undirected": []
+    },
+    "35": {
+      "parents": [],
+      "undirected": []
+    },
+    "17": {
+      "parents": [],
+      "undirected": []
+    },
+    "10": {
+      "parents": [],
+      "undirected": []
+    },
+    "20": {
+      "parents": [],
+      "undirected": [
+        "8"
+      ]
+    },
+    "8": {
+      "parents": [],
+      "undirected": [
+        "20"
+      ]
+    },
+    "36": {
+      "parents": [],
+      "undirected": []
+    },
+    "27": {
+      "parents": [],
+      "undirected": []
+    },
+    "29": {
+      "parents": [],
+      "undirected": []
+    },
+    "0": {
+      "parents": [],
+      "undirected": []
+    },
+    "30": {
+      "parents": [
+        "22",
+        "36",
+        "27",
+        "29",
+        "0"
+      ],
+      "undirected": []
+    }
+  }
+}

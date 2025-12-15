@@ -1,0 +1,16 @@
+train_size,median,ci_lower,ci_upper,n_seeds,dataset,metric,metric_title,dataset_label
+20,0.3525708469973614,0.2753964536965421,0.4269031302971657,100,custom_scm,correlation_matrix_difference,Correlation Matrix Difference,custom scm
+50,0.15414358462961875,0.1282117405971829,0.19090059916975416,100,custom_scm,correlation_matrix_difference,Correlation Matrix Difference,custom scm
+100,0.11869637726229088,0.10164118001045389,0.1436847807703272,100,custom_scm,correlation_matrix_difference,Correlation Matrix Difference,custom scm
+200,0.11503891122243615,0.0902656613802734,0.12796105235378102,100,custom_scm,correlation_matrix_difference,Correlation Matrix Difference,custom scm
+500,0.07860879563593229,0.06918160023778802,0.0960567598753726,100,custom_scm,correlation_matrix_difference,Correlation Matrix Difference,custom scm
+20,0.024583333333333346,0.0207083333333333,0.027708333333333307,100,custom_scm,k_marginal_tvd,k-Marginal Total Variation Distance,custom scm
+50,0.01287500000000004,0.009916666666666685,0.01475,100,custom_scm,k_marginal_tvd,k-Marginal Total Variation Distance,custom scm
+100,0.00983333333333336,0.00850000000000005,0.012209375,100,custom_scm,k_marginal_tvd,k-Marginal Total Variation Distance,custom scm
+200,0.009416666666666601,0.008375000000000049,0.010250000000000009,100,custom_scm,k_marginal_tvd,k-Marginal Total Variation Distance,custom scm
+500,0.008666666666666586,0.007291666666666655,0.009416666666666601,100,custom_scm,k_marginal_tvd,k-Marginal Total Variation Distance,custom scm
+20,0.020125000000000004,0.017871875000000086,0.024250000000000105,100,custom_scm,nnaa,Nearest-Neighbor Adversarial Accuracy,custom scm
+50,0.013999999999999957,0.011375000000000024,0.016000000000000014,100,custom_scm,nnaa,Nearest-Neighbor Adversarial Accuracy,custom scm
+100,0.013875000000000054,0.012371874999999973,0.015499999999999958,100,custom_scm,nnaa,Nearest-Neighbor Adversarial Accuracy,custom scm
+200,0.013749999999999984,0.012749999999999984,0.014750000000000069,100,custom_scm,nnaa,Nearest-Neighbor Adversarial Accuracy,custom scm
+500,0.011000000000000065,0.00937187499999997,0.013375000000000054,100,custom_scm,nnaa,Nearest-Neighbor Adversarial Accuracy,custom scm

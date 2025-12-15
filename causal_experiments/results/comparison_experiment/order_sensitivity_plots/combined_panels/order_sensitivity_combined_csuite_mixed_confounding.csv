@@ -1,0 +1,16 @@
+train_size,median,ci_lower,ci_upper,n_seeds,dataset,metric,metric_title,dataset_label
+20,0.0880600520330348,0.07725523248217225,0.10027866691664011,100,csuite_mixed_confounding,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed confounding
+50,0.14281030642135367,0.11904773444182438,0.15749755293088064,100,csuite_mixed_confounding,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed confounding
+100,0.17724683306279518,0.1608215403528476,0.18809638809918894,100,csuite_mixed_confounding,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed confounding
+200,0.09019005530222732,0.08103567541418415,0.10128469984153632,100,csuite_mixed_confounding,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed confounding
+500,0.09432382723915411,0.07755852276878811,0.11324600129276785,100,csuite_mixed_confounding,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed confounding
+20,0.007746212121212043,0.006026515151515144,0.009018939393939301,100,csuite_mixed_confounding,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed confounding
+50,0.00638257575757574,0.005803030303030199,0.007504924242424222,100,csuite_mixed_confounding,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed confounding
+100,0.00642803030303031,0.005689393939393911,0.007553030303030311,100,csuite_mixed_confounding,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed confounding
+200,0.005386363636363703,0.0047180871212121655,0.006151515151515102,100,csuite_mixed_confounding,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed confounding
+500,0.004912878787878799,0.003991287878787823,0.005545454545454506,100,csuite_mixed_confounding,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed confounding
+20,0.017125,0.01550000000000007,0.020750000000000046,100,csuite_mixed_confounding,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed confounding
+50,0.028125000000000067,0.02337187499999998,0.031374999999999986,100,csuite_mixed_confounding,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed confounding
+100,0.027625000000000066,0.025243749999999995,0.030999999999999972,100,csuite_mixed_confounding,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed confounding
+200,0.019374999999999976,0.017374999999999974,0.022374999999999978,100,csuite_mixed_confounding,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed confounding
+500,0.014749999999999985,0.013250000000000095,0.018000000000000016,100,csuite_mixed_confounding,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed confounding

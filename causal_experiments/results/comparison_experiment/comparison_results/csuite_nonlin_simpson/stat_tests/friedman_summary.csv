@@ -1,0 +1,16 @@
+dataset,metric,metric_slug,train_size,n_conditions,n_pairs,statistic,p_value
+csuite_nonlin_simpson,correlation_matrix_difference,correlation_matrix_difference,20,6,100,10.14705882352921,0.07117403358307593
+csuite_nonlin_simpson,correlation_matrix_difference,correlation_matrix_difference,50,6,100,31.82632970908031,6.4307284920201405e-06
+csuite_nonlin_simpson,correlation_matrix_difference,correlation_matrix_difference,100,6,100,56.494421608925585,6.427927918050953e-11
+csuite_nonlin_simpson,correlation_matrix_difference,correlation_matrix_difference,200,6,100,16.791788856305114,0.004912080738841136
+csuite_nonlin_simpson,correlation_matrix_difference,correlation_matrix_difference,500,6,100,9.094117647058779,0.1053684972090411
+csuite_nonlin_simpson,k_marginal_tvd,2marginal,20,6,100,80.3924461493066,6.946199186439105e-16
+csuite_nonlin_simpson,k_marginal_tvd,2marginal,50,6,100,208.2539682539682,4.8660344031171454e-43
+csuite_nonlin_simpson,k_marginal_tvd,2marginal,100,6,100,244.02090694935217,1.0539521279193407e-50
+csuite_nonlin_simpson,k_marginal_tvd,2marginal,200,6,100,197.02405397477247,1.230166310184277e-40
+csuite_nonlin_simpson,k_marginal_tvd,2marginal,500,6,100,108.59208972845339,8.12802775803781e-22
+csuite_nonlin_simpson,nnaa,nnaa,20,6,100,52.90194346289745,3.522921080936735e-10
+csuite_nonlin_simpson,nnaa,nnaa,50,6,100,150.749852681202,9.244921397642538e-31
+csuite_nonlin_simpson,nnaa,nnaa,100,6,100,164.42500000000015,1.1278075271305885e-33
+csuite_nonlin_simpson,nnaa,nnaa,200,6,100,183.48235294117626,9.65172334761425e-38
+csuite_nonlin_simpson,nnaa,nnaa,500,6,100,88.42603550295847,1.4383629912113014e-17
