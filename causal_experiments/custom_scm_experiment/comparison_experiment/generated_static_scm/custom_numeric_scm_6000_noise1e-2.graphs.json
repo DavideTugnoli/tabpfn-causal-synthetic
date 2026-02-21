@@ -1,0 +1,46 @@
+{
+  "column_names": [
+    "X0",
+    "X1",
+    "X2",
+    "X3"
+  ],
+  "categorical_columns": [],
+  "noise_level": 0.01,
+  "dag_dict": {
+    "0": [],
+    "1": [
+      0,
+      2
+    ],
+    "2": [
+      3
+    ],
+    "3": []
+  },
+  "cpdag_dict": {
+    "0": {
+      "parents": [],
+      "undirected": []
+    },
+    "1": {
+      "parents": [
+        0,
+        2
+      ],
+      "undirected": []
+    },
+    "2": {
+      "parents": [],
+      "undirected": [
+        3
+      ]
+    },
+    "3": {
+      "parents": [],
+      "undirected": [
+        2
+      ]
+    }
+  }
+}

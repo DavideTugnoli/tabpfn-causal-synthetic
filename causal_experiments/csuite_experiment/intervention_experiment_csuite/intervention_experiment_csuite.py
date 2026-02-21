@@ -108,6 +108,26 @@ def _choose_indep_test(dataset_name: str, categorical_cols: list[str]) -> str:
     return "kci"
 
 
+def apply_do_surgery_to_dag(
+    dag: dict[int, list[int]],
+    intervention_nodes: list[int],
+) -> dict[int, list[int]]:
+    """Return an interventional DAG by removing incoming edges to intervention nodes."""
+    dag_copy = {int(child): [int(parent) for parent in parents] for child, parents in dag.items()}
+    all_nodes = set(dag_copy.keys())
+    for parents in dag_copy.values():
+        all_nodes.update(parents)
+    all_nodes.update(int(node) for node in intervention_nodes)
+
+    for node in sorted(all_nodes):
+        dag_copy.setdefault(node, [])
+
+    for node in intervention_nodes:
+        dag_copy[int(node)] = []
+
+    return dag_copy
+
+
 def save_crashed_seeds_to_csv(crashed_seeds_data: List[dict], output_file: Path):
     """Save crashed seeds information to CSV file.
     
@@ -163,7 +183,8 @@ def load_csuite_intervention_data(dataset_name: str) -> dict:
     env = interventions_data['environments'][0]  # Use first environment
     
     # Extract intervention info
-    intervention_idx = env['intervention_idxs'][0] if env['intervention_idxs'] else None
+    intervention_indices = [int(idx) for idx in env.get('intervention_idxs', [])]
+    intervention_idx = intervention_indices[0] if intervention_indices else None
     effect_idx = env['effect_idxs'][0] if env['effect_idxs'] else None
     
     if intervention_idx is None or effect_idx is None:
@@ -209,6 +230,7 @@ def load_csuite_intervention_data(dataset_name: str) -> dict:
         'variable': intervention_var,
         'target': target_var, 
         'values': intervention_values,
+        'intervention_indices': intervention_indices,
         'intervention_idx': intervention_idx,
         'effect_idx': effect_idx,
         'reference_data': reference_data,
@@ -943,8 +965,13 @@ def main(
             print(f"   train_size={ts}: {len(seeds)} seeds (range {seeds[0]}–{seeds[-1]})")
     
     # Output configuration - consolidated CSV files (no per-train-size split)
-    script_dir = Path(__file__).parent
-    base_output_dir = script_dir / "results" / dataset_name
+    results_root = Path(
+        os.environ.get(
+            "CSUITE_INTERVENTIONAL_RESULTS_ROOT",
+            str(Path(__file__).parent / "results"),
+        )
+    )
+    base_output_dir = results_root / dataset_name
     base_output_dir.mkdir(parents=True, exist_ok=True)  # Create base directory with dataset name
     
     # Function to get output directory and consolidated result file path
@@ -973,13 +1000,21 @@ def main(
         dataset_info = load_csuite_intervention_data(dataset_name)
         
         # Extract CSuite metadata
-        dag_dict = dataset_info['dag_dict']  # DAG structure
+        dag_observational = dataset_info['dag_dict']
         intervention_info = dataset_info['intervention_info']  # Our parsed intervention info
         column_names = dataset_info['column_names']
         categorical_cols = dataset_info['categorical_columns']  # Note: different key name
+        intervention_nodes = intervention_info.get(
+            "intervention_indices",
+            [intervention_info["intervention_idx"]],
+        )
+        dag_dict = apply_do_surgery_to_dag(dag_observational, intervention_nodes)
         
         print(f" Dataset loaded successfully:")
-        print(f"    DAG structure: {dag_dict}")
+        print(f"    Observational DAG structure: {dag_observational}")
+        print(
+            f"    Interventional DAG structure (do-surgery on nodes {intervention_nodes}): {dag_dict}"
+        )
         print(f"   📈 Intervention variable: {intervention_info['variable']} → {intervention_info['target']}")
         print(f"   🔢 Intervention values: {intervention_info['values']}")
         print(f"     Categorical features: {categorical_cols if categorical_cols else 'None'}")
@@ -1545,12 +1580,29 @@ def main(
                                 if cpdag_to_use is None:
                                     raise ValueError(f"CPDAG is required for {algorithm} algorithm but got None")
 
-                                # Handle column reordering for CPDAG (like vanilla does)
-                                if (column_order != "original") or (column_order == "original" and random_original_ordering is not None):
+                                # Handle column reordering for CPDAG (like vanilla does).
+                                # For datasets with custom "original" order (e.g. csuite_symprod_simpson),
+                                # apply that explicit permutation also in CPDAG modes.
+                                should_reorder_cpdag = (
+                                    (column_order != "original")
+                                    or (column_order == "original" and random_original_ordering is not None)
+                                    or (
+                                        custom_vanilla_orderings is not None
+                                        and column_order in custom_vanilla_orderings
+                                    )
+                                )
+                                if should_reorder_cpdag:
                                     # Use the same DAG as vanilla does
                                     dag_for_ordering = dag_dict
                                     categorical_indices = [column_names.index(col) for col in categorical_cols] if categorical_cols else None
-                                    if column_order == "original" and random_original_ordering is not None:
+                                    if custom_vanilla_orderings and column_order in custom_vanilla_orderings:
+                                        column_ordering_used = custom_vanilla_orderings[column_order]
+                                        X_train_reordered = X_train_original[:, column_ordering_used]
+                                        updated_categorical_features = None
+                                        if categorical_indices is not None:
+                                            old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(column_ordering_used)}
+                                            updated_categorical_features = [old_to_new[i] for i in categorical_indices if i in old_to_new]
+                                    elif column_order == "original" and random_original_ordering is not None:
                                         column_ordering_used = random_original_ordering
                                         X_train_reordered = X_train_original[:, column_ordering_used]
                                         updated_categorical_features = None

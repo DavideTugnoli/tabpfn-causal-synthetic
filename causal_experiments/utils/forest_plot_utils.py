@@ -753,10 +753,56 @@ def apply_xaxis_tick_locator(ax: Any, df: pd.DataFrame | None = None, shared_xli
     # If df is provided, calculate tight limits (for any range)
     elif df is not None:
         tight_xmin, tight_xmax = _calculate_tight_xlim_from_data(df, step=None)
+        
+        # Balance asymmetric limits for noise=1e-2 CPDAG discovered plots
+        # Check if this is a noise=1e-2 plot (custom_scm_noise1e-2 dataset)
+        is_noise_1e2 = False
+        if 'dataset' in df.columns:
+            is_noise_1e2 = df['dataset'].str.contains('custom_scm_noise1e-2', na=False).any()
+        
+        if is_noise_1e2:
+            # Check if limits are highly asymmetric (e.g., 0 is far to the right, only left tail)
+            # Balance by ensuring reasonable space on both sides of 0
+            if tight_xmin <= 0 <= tight_xmax:
+                # Data spans zero: check asymmetry
+                left_span = abs(tight_xmin)
+                right_span = abs(tight_xmax)
+                # If left span is much smaller than right span, expand left side
+                if left_span > 0 and right_span > 0 and right_span / left_span > 3.0:
+                    # Balance by expanding left side to at least 1/3 of right span
+                    balanced_left = -right_span / 3.0
+                    # Round to nearest 0.05 for consistency
+                    balanced_left = np.floor(balanced_left / 0.05) * 0.05
+                    tight_xmin = min(tight_xmin, balanced_left)
+                # If right span is much smaller than left span, expand right side
+                elif left_span > 0 and right_span > 0 and left_span / right_span > 3.0:
+                    # Balance by expanding right side to at least 1/3 of left span
+                    balanced_right = left_span / 3.0
+                    # Round to nearest 0.05 for consistency
+                    balanced_right = np.ceil(balanced_right / 0.05) * 0.05
+                    tight_xmax = max(tight_xmax, balanced_right)
+            elif tight_xmin > 0:
+                # All positive: ensure some negative space for visual balance
+                if tight_xmin < tight_xmax * 0.1:  # Very close to zero
+                    tight_xmin = -tight_xmax * 0.2  # Add 20% negative space
+                    tight_xmin = np.floor(tight_xmin / 0.05) * 0.05
+            elif tight_xmax < 0:
+                # All negative: ensure some positive space for visual balance
+                if abs(tight_xmax) < abs(tight_xmin) * 0.1:  # Very close to zero
+                    tight_xmax = -tight_xmin * 0.2  # Add 20% positive space
+                    tight_xmax = np.ceil(tight_xmax / 0.05) * 0.05
+        
         # Set tight limits without margins
         ax.set_xlim(tight_xmin, tight_xmax)
         xlim = (tight_xmin, tight_xmax)
         x_range = abs(xlim[1] - xlim[0])
+
+    # Guard against degenerate ranges (e.g., all effects/CI exactly zero).
+    # A null span can produce tick labels collapsed to repeated "0".
+    if x_range < 1e-12:
+        ax.set_xlim(-0.1, 0.1)
+        xlim = (-0.1, 0.1)
+        x_range = 0.2
     
     # Set locator first to determine tick values
     # Check if limits are exactly -0.10 to 0.10 (or very close) - use step 0.05 for fine granularity
@@ -989,4 +1035,3 @@ def _validate_nnaa_metric(df: pd.DataFrame) -> NnaaCheckSummary | None:
         max_value=max_val,
         high_points=high_points
     )
-

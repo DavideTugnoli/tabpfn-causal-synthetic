@@ -97,6 +97,8 @@ def resolve_data_path(
     candidates.extend([
         project_root / path,
         project_root / path_str,
+        project_root.parent / path,
+        project_root.parent / path_str,
     ])
 
     for candidate in candidates:
@@ -425,4 +427,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

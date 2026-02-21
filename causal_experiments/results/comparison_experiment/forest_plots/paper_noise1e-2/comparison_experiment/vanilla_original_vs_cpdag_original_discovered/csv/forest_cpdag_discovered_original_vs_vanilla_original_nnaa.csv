@@ -1,0 +1,6 @@
+dataset,train_size,effect,ci_lower,ci_upper,p_value,p_holm,is_significant,metric
+custom_scm_noise1e-2,20,0.0,0.0,0.0,0.0832750040512064,0.0832750040512064,False,nnaa
+custom_scm_noise1e-2,50,0.0,0.0,0.0,0.0081645275289628,0.0244935825868886,False,nnaa
+custom_scm_noise1e-2,100,0.0,0.0,0.0,0.0455141763149142,0.2730850578894855,False,nnaa
+custom_scm_noise1e-2,200,0.0,-0.17075,0.0,0.0015731036997465,0.0094386221984791,False,nnaa
+custom_scm_noise1e-2,500,0.0,-0.15825,0.0,0.0027094242270055,0.0162565453620331,False,nnaa

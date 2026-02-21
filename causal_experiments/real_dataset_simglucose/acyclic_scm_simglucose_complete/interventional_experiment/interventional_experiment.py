@@ -104,6 +104,77 @@ def _choose_indep_test(dataset_name: str, categorical_cols: list[str]) -> str:
     return "kci"
 
 
+def apply_do_surgery_to_dag(
+    dag: dict[int, list[int]],
+    intervention_nodes: list[int],
+) -> dict[int, list[int]]:
+    """Return an interventional DAG by removing incoming edges to intervention nodes."""
+    dag_copy = {int(child): [int(parent) for parent in parents] for child, parents in dag.items()}
+    all_nodes = set(dag_copy.keys())
+    for parents in dag_copy.values():
+        all_nodes.update(parents)
+    all_nodes.update(int(node) for node in intervention_nodes)
+
+    for node in sorted(all_nodes):
+        dag_copy.setdefault(node, [])
+
+    for node in intervention_nodes:
+        dag_copy[int(node)] = []
+
+    return dag_copy
+
+
+def apply_do_surgery_to_cpdag(
+    cpdag: dict[int, dict[str, list[int]]],
+    dag_observational: dict[int, list[int]],
+    intervention_nodes: list[int],
+) -> dict[int, dict[str, list[int]]]:
+    """Return an interventional CPDAG by removing edges incoming to intervention nodes."""
+    def unique_preserve_order(items: list[int]) -> list[int]:
+        seen: set[int] = set()
+        ordered: list[int] = []
+        for item in items:
+            if item not in seen:
+                seen.add(item)
+                ordered.append(item)
+        return ordered
+
+    cpdag_copy: dict[int, dict[str, list[int]]] = {}
+    all_nodes = set(int(node) for node in cpdag.keys())
+    for node, links in cpdag.items():
+        cpdag_copy[int(node)] = {
+            "parents": [int(parent) for parent in links.get("parents", [])],
+            "undirected": [int(neigh) for neigh in links.get("undirected", [])],
+        }
+        all_nodes.update(cpdag_copy[int(node)]["parents"])
+        all_nodes.update(cpdag_copy[int(node)]["undirected"])
+    for child, parents in dag_observational.items():
+        all_nodes.add(int(child))
+        all_nodes.update(int(parent) for parent in parents)
+    all_nodes.update(int(node) for node in intervention_nodes)
+
+    for node in sorted(all_nodes):
+        cpdag_copy.setdefault(node, {"parents": [], "undirected": []})
+
+    for node in intervention_nodes:
+        node = int(node)
+        incoming_parents = set(int(parent) for parent in dag_observational.get(node, []))
+        cpdag_copy[node]["parents"] = []
+        cpdag_copy[node]["undirected"] = [
+            neigh for neigh in cpdag_copy[node]["undirected"] if neigh not in incoming_parents
+        ]
+        for parent in incoming_parents:
+            cpdag_copy[parent]["undirected"] = [
+                neigh for neigh in cpdag_copy[parent]["undirected"] if neigh != node
+            ]
+
+    for node in cpdag_copy:
+        cpdag_copy[node]["parents"] = unique_preserve_order(cpdag_copy[node]["parents"])
+        cpdag_copy[node]["undirected"] = unique_preserve_order(cpdag_copy[node]["undirected"])
+
+    return cpdag_copy
+
+
 def save_crashed_seeds_to_csv(crashed_seeds_data: List[dict], output_file: Path):
     """Save crashed seeds information to CSV file.
     
@@ -239,6 +310,7 @@ def load_simglucose_intervention_data(dataset_name: str) -> dict:
         "variable": intervention_var,
         "target": target_var,
         "values": intervention_values,
+        "intervention_indices": [intervention_idx],
         "intervention_idx": intervention_idx,
         "effect_idx": effect_idx,
         "reference_data": reference_data,
@@ -937,6 +1009,7 @@ def main(
     train_sizes: list[int] | None = None,
     train_sizes_group: str | None = None,  # Deprecated, use train_sizes instead
     skip_seeds: list[int] | None = None,
+    seed_start: int = 0,
 ):
     """Main experimental pipeline.
     
@@ -952,6 +1025,7 @@ def main(
         skip_seeds: Explicit seed values to skip entirely during execution
         train_sizes: Custom list of train sizes to use. If None, uses defaults based on test_mode.
         train_sizes_group: [DEPRECATED] Use train_sizes instead. Optionally restrict to small/large groups.
+        seed_start: Global offset added to the linear seed schedule.
     """
     print("🧪 SimGlucose Interventional Experiment for TabPFN")
     print("=" * 60)
@@ -961,6 +1035,9 @@ def main(
     print()
 
     cpdag_indep_test = "kci"
+
+    if seed_start < 0:
+        raise ValueError("seed_start must be >= 0")
     
     # ======================
     # EXPERIMENTAL PARAMETERS
@@ -1037,7 +1114,7 @@ def main(
         if train_size in ALL_TRAIN_SIZES_ORDERED:
             position = ALL_TRAIN_SIZES_ORDERED.index(train_size)
             # Calculate starting seed for this train_size: position * N_REPETITIONS
-            start_seed = position * N_REPETITIONS
+            start_seed = seed_start + position * N_REPETITIONS
             seeds_for_size: list[int] = []
             for rep_idx in range(N_REPETITIONS):
                 seed = start_seed + rep_idx
@@ -1075,7 +1152,13 @@ def main(
     
     # Output configuration - consolidated CSV files (no per-train-size split)
     script_dir = Path(__file__).parent
-    base_output_dir = script_dir / "results"
+    results_root = Path(
+        os.environ.get(
+            "SIMGLUCOSE_INTERVENTIONAL_RESULTS_ROOT",
+            str(script_dir / "results"),
+        )
+    )
+    base_output_dir = results_root
     base_output_dir.mkdir(parents=True, exist_ok=True)
     
     # Function to get output directory and consolidated result file path
@@ -1108,13 +1191,21 @@ def main(
         dataset_info = load_simglucose_intervention_data(dataset_name)
         
         # Extract metadata
-        dag_dict = dataset_info['dag_dict']  # DAG structure
+        dag_observational = dataset_info['dag_dict']
         intervention_info = dataset_info['intervention_info']  # Our parsed intervention info
         column_names = dataset_info['column_names']
         categorical_cols = dataset_info['categorical_columns']  # Note: different key name
+        intervention_nodes = intervention_info.get(
+            "intervention_indices",
+            [intervention_info["intervention_idx"]],
+        )
+        dag_dict = apply_do_surgery_to_dag(dag_observational, intervention_nodes)
         
         print(f" Dataset loaded successfully:")
-        print(f"    DAG structure: {dag_dict}")
+        print(f"    Observational DAG structure: {dag_observational}")
+        print(
+            f"    Interventional DAG structure (do-surgery on nodes {intervention_nodes}): {dag_dict}"
+        )
         print(f"   📈 Intervention variable: {intervention_info['variable']} → {intervention_info['target']}")
         print(f"   🔢 Intervention values: {intervention_info['values']}")
         print(f"     Categorical features: {categorical_cols if categorical_cols else 'None'}")
@@ -1356,10 +1447,16 @@ def main(
                 vanilla_orderings.append((name, indices))
         print(f" Using all column orderings for vanilla: {list(orderings_dict.keys())}")
     
-    # Prefer the minimal CPDAG supplied with the dataset, fallback to ideal CPDAG derived from the DAG
-    cpdag_minimal = dataset_info.get("cpdag_minimal")
-    if cpdag_minimal is not None:
-        ideal_cpdag = copy.deepcopy(cpdag_minimal)
+    # Prefer the minimal CPDAG supplied with the dataset, then apply the same
+    # intervention surgery used for the DAG; fallback to ideal CPDAG from the
+    # interventional DAG if no static CPDAG is available.
+    cpdag_minimal_observational = dataset_info.get("cpdag_minimal")
+    if cpdag_minimal_observational is not None:
+        ideal_cpdag = apply_do_surgery_to_cpdag(
+            copy.deepcopy(cpdag_minimal_observational),
+            dag_observational,
+            intervention_nodes,
+        )
     else:
         ideal_cpdag = dag_to_ideal_cpdag(dag_dict)
     
@@ -1989,6 +2086,12 @@ if __name__ == "__main__":
         help="Comma-separated list of seed values to skip entirely.",
     )
     parser.add_argument(
+        "--seed-start",
+        type=int,
+        default=0,
+        help="Global offset added to the linear seed schedule (default: 0).",
+    )
+    parser.add_argument(
         "--train-sizes",
         type=int,
         nargs="+",
@@ -2030,4 +2133,5 @@ if __name__ == "__main__":
         train_sizes=args.train_sizes,
         train_sizes_group=args.train_sizes_group,
         skip_seeds=list(skip_seeds_set) if skip_seeds_set else None,
+        seed_start=args.seed_start,
     )

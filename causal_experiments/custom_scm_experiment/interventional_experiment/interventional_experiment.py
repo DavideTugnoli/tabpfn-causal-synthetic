@@ -55,6 +55,86 @@ def to_workspace_relative(path: str | Path) -> str:
     except ValueError:
         return str(resolved)
 
+
+def _format_noise_tag(noise_level: float) -> str:
+    """Format a compact, filesystem-friendly noise tag (e.g., noise1e-2)."""
+    if noise_level == 0:
+        return "noise0"
+    sci = f"{noise_level:.0e}"
+    sci = sci.replace("e-0", "e-").replace("e+0", "e+")
+    return f"noise{sci}"
+
+
+def apply_do_surgery_to_dag(
+    dag: dict[int, list[int]],
+    intervention_nodes: list[int],
+) -> dict[int, list[int]]:
+    """Return an interventional DAG by removing incoming edges to intervention nodes."""
+    dag_copy = {int(child): [int(parent) for parent in parents] for child, parents in dag.items()}
+    all_nodes = set(dag_copy.keys())
+    for parents in dag_copy.values():
+        all_nodes.update(parents)
+    all_nodes.update(int(node) for node in intervention_nodes)
+
+    for node in sorted(all_nodes):
+        dag_copy.setdefault(node, [])
+
+    for node in intervention_nodes:
+        dag_copy[int(node)] = []
+
+    return dag_copy
+
+
+def apply_do_surgery_to_cpdag(
+    cpdag: dict[int, dict[str, list[int]]],
+    dag_observational: dict[int, list[int]],
+    intervention_nodes: list[int],
+) -> dict[int, dict[str, list[int]]]:
+    """Return an interventional CPDAG by removing edges incoming to intervention nodes."""
+    def unique_preserve_order(items: list[int]) -> list[int]:
+        seen: set[int] = set()
+        ordered: list[int] = []
+        for item in items:
+            if item not in seen:
+                seen.add(item)
+                ordered.append(item)
+        return ordered
+
+    cpdag_copy: dict[int, dict[str, list[int]]] = {}
+    all_nodes = set(int(node) for node in cpdag.keys())
+    for node, links in cpdag.items():
+        cpdag_copy[int(node)] = {
+            "parents": [int(parent) for parent in links.get("parents", [])],
+            "undirected": [int(neigh) for neigh in links.get("undirected", [])],
+        }
+        all_nodes.update(cpdag_copy[int(node)]["parents"])
+        all_nodes.update(cpdag_copy[int(node)]["undirected"])
+    for child, parents in dag_observational.items():
+        all_nodes.add(int(child))
+        all_nodes.update(int(parent) for parent in parents)
+    all_nodes.update(int(node) for node in intervention_nodes)
+
+    for node in sorted(all_nodes):
+        cpdag_copy.setdefault(node, {"parents": [], "undirected": []})
+
+    for node in intervention_nodes:
+        node = int(node)
+        incoming_parents = set(int(parent) for parent in dag_observational.get(node, []))
+        cpdag_copy[node]["parents"] = []
+        cpdag_copy[node]["undirected"] = [
+            neigh for neigh in cpdag_copy[node]["undirected"] if neigh not in incoming_parents
+        ]
+        for parent in incoming_parents:
+            cpdag_copy[parent]["undirected"] = [
+                neigh for neigh in cpdag_copy[parent]["undirected"] if neigh != node
+            ]
+
+    for node in cpdag_copy:
+        cpdag_copy[node]["parents"] = unique_preserve_order(cpdag_copy[node]["parents"])
+        cpdag_copy[node]["undirected"] = unique_preserve_order(cpdag_copy[node]["undirected"])
+
+    return cpdag_copy
+
 from causal_experiments.utils import (
     create_result_row,
     discover_cpdag_from_data,
@@ -326,18 +406,26 @@ _device_info_printed = False
 def _load_custom_intervention_data(
     *,
     mode: str = "numeric",
+    noise_level: float | None = None,
 ) -> dict[str, Any]:
     """Load static custom SCM interventional data (X3 fixed to 0 or 1)."""
 
     dataset_kind = "mixed" if mode == "mixed" else "numeric"
     base_dir = Path(__file__).parent / "generated_interventional"
-    branch0_path = base_dir / f"custom_{dataset_kind}_intervention_x3_eq_0.csv"
-    branch1_path = base_dir / f"custom_{dataset_kind}_intervention_x3_eq_1.csv"
+    base_name_0 = f"custom_{dataset_kind}_intervention_x3_eq_0"
+    base_name_1 = f"custom_{dataset_kind}_intervention_x3_eq_1"
+    if noise_level is not None:
+        noise_tag = _format_noise_tag(noise_level)
+        base_name_0 = f"{base_name_0}_{noise_tag}"
+        base_name_1 = f"{base_name_1}_{noise_tag}"
+    branch0_path = base_dir / f"{base_name_0}.csv"
+    branch1_path = base_dir / f"{base_name_1}.csv"
 
     if not branch0_path.exists() or not branch1_path.exists():
+        noise_hint = f" --noise-level {noise_level:g}" if noise_level is not None else ""
         raise FileNotFoundError(
             "Missing interventional dataset CSVs. Expected files: "
-            f"{branch0_path} and {branch1_path}. Run generate_custom_interventional_dataset.py first."
+            f"{branch0_path} and {branch1_path}. Run generate_custom_interventional_dataset.py{noise_hint} first."
         )
 
     df0 = pd.read_csv(branch0_path)
@@ -359,10 +447,17 @@ def _load_custom_intervention_data(
     effect_idx = column_names.index(target_var)
 
     intervention_values = [float(reference_data[0, intervention_idx]), float(intervention_data[0, intervention_idx])]
+    intervention_indices = [intervention_idx]
 
     configs = get_experimental_configs(use_categorical=(mode == "mixed"))
-    dag_dict = configs["dag"]["dag"]
-    cpdag_dict = configs["cpdag_minimal"]["cpdag"]
+    dag_dict_observational = configs["dag"]["dag"]
+    cpdag_dict_observational = configs["cpdag_minimal"]["cpdag"]
+    dag_dict_interventional = apply_do_surgery_to_dag(dag_dict_observational, intervention_indices)
+    cpdag_dict_interventional = apply_do_surgery_to_cpdag(
+        cpdag_dict_observational,
+        dag_dict_observational,
+        intervention_indices,
+    )
 
     categorical_cols = []
     if mode == "mixed":
@@ -372,6 +467,7 @@ def _load_custom_intervention_data(
         "variable": intervention_var,
         "target": target_var,
         "values": intervention_values,
+        "intervention_indices": intervention_indices,
         "intervention_idx": intervention_idx,
         "effect_idx": effect_idx,
         "reference_data": reference_data,
@@ -381,8 +477,10 @@ def _load_custom_intervention_data(
     return {
         "column_names": column_names,
         "categorical_columns": categorical_cols,
-        "dag_dict": dag_dict,
-        "cpdag_dict": cpdag_dict,
+        "dag_dict_observational": dag_dict_observational,
+        "cpdag_dict_observational": cpdag_dict_observational,
+        "dag_dict": dag_dict_interventional,
+        "cpdag_dict": cpdag_dict_interventional,
         "intervention_info": intervention_info,
     }
 
@@ -587,7 +685,20 @@ def run_single_experiment(
         pass
 
 
-def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = False, save_reordered: bool = False, save_synthetic: bool = False, algorithm_filter: str | None = None, column_order_filter: str | None = None, train_sizes_group: str | None = None):
+def main(
+    test_mode: bool = False,
+    save_every: int = 100,
+    save_datasets: bool = False,
+    save_reordered: bool = False,
+    save_synthetic: bool = False,
+    algorithm_filter: str | None = None,
+    column_order_filter: str | None = None,
+    train_sizes_group: str | None = None,
+    train_sizes: list[int] | None = None,
+    repetitions: int | None = None,
+    seed_start: int = 0,
+    noise_level: float | None = None,
+):
     """Main experimental pipeline.
     
     Args:
@@ -605,11 +716,22 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
     if test_mode:
         TRAIN_SIZES = [50, 100]  # Multiple training sizes for testing
         TEST_SIZE = 200   # Remaining samples from interventional data
-        N_REPETITIONS = 3
+        N_REPETITIONS = repetitions if repetitions is not None else 3
     else:
         TRAIN_SIZES = [20, 50, 100, 200, 500, 1000]  # Multiple training sizes for full experiment
         TEST_SIZE = 2000   # Remaining samples from interventional data
-        N_REPETITIONS = 130
+        N_REPETITIONS = repetitions if repetitions is not None else 130
+
+    if N_REPETITIONS <= 0:
+        raise ValueError("repetitions must be a positive integer")
+
+    if train_sizes is not None:
+        TRAIN_SIZES = sorted(set(train_sizes))
+        if not TRAIN_SIZES:
+            raise ValueError("train_sizes cannot be empty")
+        invalid_sizes = [ts for ts in TRAIN_SIZES if ts <= 0]
+        if invalid_sizes:
+            raise ValueError(f"train_sizes must be positive integers, got: {invalid_sizes}")
 
     # Optional: restrict to small/large train-size groups
     if train_sizes_group:
@@ -623,6 +745,9 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
             pass
         else:
             raise ValueError("train_sizes_group must be one of: small, large, all")
+
+    if seed_start < 0:
+        raise ValueError("seed_start must be >= 0")
     
     # Total interventional data: max(TRAIN_SIZES) + TEST_SIZE (split 50/50 for X3=0/1)
     # TOTAL_INTERVENTIONAL_SIZE = max(TRAIN_SIZES) + TEST_SIZE  # Not used in this experiment
@@ -638,7 +763,16 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
 
     # Output configuration - consolidated CSV files (no per-train-size split)
     script_dir = Path(__file__).parent
-    base_output_dir = script_dir / "results"
+    results_dir_name = "results"
+    if noise_level is not None:
+        results_dir_name = f"results_{_format_noise_tag(noise_level)}"
+    results_root = Path(
+        os.environ.get(
+            "CUSTOM_SCM_INTERVENTIONAL_RESULTS_ROOT",
+            str(script_dir),
+        )
+    )
+    base_output_dir = results_root / results_dir_name
     base_output_dir.mkdir(parents=True, exist_ok=True)  # Create base directory
     
     # Function to get output directory and consolidated results file path
@@ -666,16 +800,30 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
 
     # For interventional experiment, default to numeric SCM (no categorical support)
     USE_CATEGORICAL = False
-    dataset_info = _load_custom_intervention_data(mode="mixed" if USE_CATEGORICAL else "numeric")
+    default_noise_level = 0.3 if USE_CATEGORICAL else 1e-5
+    noise_level_used = default_noise_level if noise_level is None else noise_level
+    print(f" Using SCM noise level: {noise_level_used:g}")
+
+    dataset_info = _load_custom_intervention_data(
+        mode="mixed" if USE_CATEGORICAL else "numeric",
+        noise_level=noise_level,
+    )
 
     column_names = dataset_info["column_names"]
     categorical_cols = dataset_info["categorical_columns"]
+    dag_dict_observational = dataset_info["dag_dict_observational"]
+    cpdag_observational = dataset_info["cpdag_dict_observational"]
     dag_dict_static = dataset_info["dag_dict"]
     cpdag_static = dataset_info["cpdag_dict"]
     intervention_info = dataset_info["intervention_info"]
+    intervention_nodes = intervention_info.get("intervention_indices", [intervention_info["intervention_idx"]])
 
     cpdag_indep_test = "hybrid" if USE_CATEGORICAL else "fisherz"
     print(f" Independence test for CPDAG discovery: {cpdag_indep_test}")
+    print(f" Observational DAG: {dag_dict_observational}")
+    print(
+        f" Interventional DAG (do-surgery on nodes {intervention_nodes}): {dag_dict_static}"
+    )
 
 
     # ======================
@@ -691,10 +839,71 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
 
     configs = get_experimental_configs(use_categorical=USE_CATEGORICAL)
 
-    if dag_dict_static != configs["dag"]["dag"]:
+    if dag_dict_observational != configs["dag"]["dag"]:
         raise ValueError("Static dataset DAG does not match experimental configuration DAG")
-    if cpdag_static != configs["cpdag_minimal"]["cpdag"]:
+    if cpdag_observational != configs["cpdag_minimal"]["cpdag"]:
         raise ValueError("Static dataset CPDAG does not match experimental configuration CPDAG")
+
+    from causal_experiments.utils.dag_utils import get_ordering_strategies
+    orderings_dict = get_ordering_strategies(dag_dict_static)
+
+    def deterministic_random_ordering(n_features: int, dataset_key: str) -> list[int]:
+        import hashlib
+        salt = "random_original_v1"
+        key = f"{dataset_key}:{salt}"
+        digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
+        seed = int(digest[:16], 16) % (2**32)
+        rng = np.random.default_rng(seed)
+        return list(rng.permutation(n_features))
+
+    random_original_ordering: list[int] | None = None
+    original_order = orderings_dict.get("original")
+    topological_order = orderings_dict.get("topological")
+    reverse_topological_order = orderings_dict.get("reverse_topological")
+    if original_order is not None and (
+        original_order == topological_order or original_order == reverse_topological_order
+    ):
+        random_original_ordering = deterministic_random_ordering(
+            len(original_order),
+            "custom_scm_interventional",
+        )
+        if (
+            random_original_ordering == topological_order
+            or random_original_ordering == reverse_topological_order
+        ):
+            random_original_ordering = (
+                random_original_ordering[1:] + random_original_ordering[:1]
+            )
+        print(
+            "  Original ordering equals topological/reverse_topological. "
+            "Using deterministic random ordering for 'original'."
+        )
+        print(f"   Random original ordering: {random_original_ordering}")
+
+    original_order_effective = (
+        random_original_ordering if random_original_ordering is not None else orderings_dict["original"]
+    )
+
+    # Update configurations so DAG/CPDAG minimal use interventional graph constraints.
+    configs["vanilla"]["orderings"] = [
+        ("original", original_order_effective),
+        ("topological", orderings_dict["topological"]),
+        ("reverse_topological", orderings_dict["reverse_topological"]),
+    ]
+    configs["vanilla"]["dag_for_ordering"] = dag_dict_static
+
+    configs["dag"]["orderings"] = [("topological", orderings_dict["topological"])]
+    configs["dag"]["dag"] = dag_dict_static
+    configs["dag"]["dag_for_ordering"] = dag_dict_static
+
+    configs["cpdag_discovered"]["orderings"] = [("original", original_order_effective)]
+    configs["cpdag_discovered"]["dag"] = dag_dict_static
+    configs["cpdag_discovered"]["dag_for_ordering"] = dag_dict_static
+
+    configs["cpdag_minimal"]["orderings"] = [("original", original_order_effective)]
+    configs["cpdag_minimal"]["dag"] = dag_dict_static
+    configs["cpdag_minimal"]["cpdag"] = cpdag_static
+    configs["cpdag_minimal"]["dag_for_ordering"] = dag_dict_static
 
     # Filter algorithms if specified (for accurate total_experiments calculation)
     if algorithm_filter:
@@ -840,12 +1049,16 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
 
     print("Loading/generating interventional train sets...")
     total_experiments_needed = len(TRAIN_SIZES) * N_REPETITIONS
-    print(f"Will generate {total_experiments_needed} unique datasets using seeds 0 to {total_experiments_needed-1}")
+    max_seed = seed_start + total_experiments_needed - 1
+    print(
+        f"Will generate {total_experiments_needed} unique datasets using seeds "
+        f"{seed_start} to {max_seed}"
+    )
 
     datasets_dir = base_output_dir / "datasets"
     datasets_dir.mkdir(parents=True, exist_ok=True)
 
-    linear_seed = 0
+    linear_seed = seed_start
     for train_size in TRAIN_SIZES:
         for rep_idx in range(N_REPETITIONS):
             seed = linear_seed
@@ -919,8 +1132,8 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
 
             linear_seed += 1
 
-            if linear_seed % 20 == 0:
-                print(f"Processed {linear_seed} train splits")
+            if (linear_seed - seed_start) % 20 == 0:
+                print(f"Processed {linear_seed - seed_start} train splits")
 
     if cached_datasets:
         print(f"    Cached datasets loaded for {cached_datasets} seeds")
@@ -939,7 +1152,7 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
             column_order, _ = column_order_tuple
 
             # Linear seed counter approach - use same seed sequence for all algorithms
-            linear_seed = 0  # Reset to 0 for each algorithm to ensure same seeds across algorithms
+            linear_seed = seed_start  # Reset per algorithm to ensure same seeds across algorithms
 
             for train_size in TRAIN_SIZES:
                 for rep_idx in range(N_REPETITIONS):
@@ -1014,22 +1227,32 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
                                 raise ValueError(f"dag_for_ordering is required for vanilla algorithm but got None")
                             # Convert categorical column names to indices for prepare_vanilla_data
                             categorical_indices = [column_names.index(col) for col in categorical_cols] if categorical_cols else None
-                            X_train_prepared, column_ordering_used, _ = prepare_vanilla_data(
-                                X_train_original, column_order, dag_for_ordering, column_names, categorical_indices
-                            )
+                            if column_order == "original" and random_original_ordering is not None:
+                                column_ordering_used = random_original_ordering
+                                X_train_prepared = X_train_original[:, column_ordering_used]
+                            else:
+                                X_train_prepared, column_ordering_used, _ = prepare_vanilla_data(
+                                    X_train_original, column_order, dag_for_ordering, column_names, categorical_indices
+                                )
                             dag_prepared, cpdag_prepared = None, None
                             
                         elif algorithm == "dag":
                             if dag is None:
                                 raise ValueError(f"DAG is required for dag algorithm but got None")
                             # Optional column reordering for DAG
-                            if column_order != "original":
+                            if (column_order != "original") or (
+                                column_order == "original" and random_original_ordering is not None
+                            ):
                                 if dag_for_ordering is None:
                                     raise ValueError(f"dag_for_ordering is required for DAG algorithm but got None")
                                 categorical_indices = [column_names.index(col) for col in categorical_cols] if categorical_cols else None
-                                X_train_reordered, column_ordering_used, _ = prepare_vanilla_data(
-                                    X_train_original, column_order, dag_for_ordering, column_names, categorical_indices
-                                )
+                                if column_order == "original" and random_original_ordering is not None:
+                                    column_ordering_used = random_original_ordering
+                                    X_train_reordered = X_train_original[:, column_ordering_used]
+                                else:
+                                    X_train_reordered, column_ordering_used, _ = prepare_vanilla_data(
+                                        X_train_original, column_order, dag_for_ordering, column_names, categorical_indices
+                                    )
                                 # Remap DAG indices to the new column order
                                 old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(column_ordering_used)}
                                 dag_reordered = {}
@@ -1053,14 +1276,20 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
                                 raise ValueError(f"CPDAG is required for {algorithm} algorithm but got None")
                             
                             # Handle column reordering for CPDAG (like vanilla does)
-                            if column_order != "original":
+                            if (column_order != "original") or (
+                                column_order == "original" and random_original_ordering is not None
+                            ):
                                 # Use the same DAG as vanilla does for computing ordering
                                 if dag_for_ordering is None:
                                     raise ValueError(f"dag_for_ordering is required for CPDAG algorithm but got None")
                                 categorical_indices = [column_names.index(col) for col in categorical_cols] if categorical_cols else None
-                                X_train_reordered, column_ordering_used, _ = prepare_vanilla_data(
-                                    X_train_original, column_order, dag_for_ordering, column_names, categorical_indices
-                                )
+                                if column_order == "original" and random_original_ordering is not None:
+                                    column_ordering_used = random_original_ordering
+                                    X_train_reordered = X_train_original[:, column_ordering_used]
+                                else:
+                                    X_train_reordered, column_ordering_used, _ = prepare_vanilla_data(
+                                        X_train_original, column_order, dag_for_ordering, column_names, categorical_indices
+                                    )
                                 
                                 # Reorder CPDAG structure to match new column ordering
                                 old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(column_ordering_used)}
@@ -1141,6 +1370,7 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
                             reordered_graph_dict=reordered_graph_dict,
                             column_ordering_used=column_ordering_used
                         )
+                        result_row["noise_level"] = noise_level_used
                         
                         # Get actual column order based on algorithm and ordering strategy
                         if (algorithm == "vanilla" or algorithm == "dag" or algorithm.startswith("cpdag_")) and column_order != "original" and column_ordering_used is not None:
@@ -1368,6 +1598,33 @@ if __name__ == "__main__":
         "--train-sizes-group", choices=["small", "large", "all"], default=None,
         help="Optionally restrict train sizes: small=[20,50,100], large=[200,500,1000]."
     )
+    parser.add_argument(
+        "--train-sizes",
+        type=int,
+        nargs="+",
+        help="Override train sizes with one or more positive integers. Example: --train-sizes 20 50 100",
+    )
+    parser.add_argument(
+        "--repetitions",
+        type=int,
+        default=None,
+        help="Number of repetitions per train size. Defaults to 130 (or 3 in --test).",
+    )
+    parser.add_argument(
+        "--seed-start",
+        type=int,
+        default=0,
+        help="Starting seed for linear seed schedule (default: 0).",
+    )
+    parser.add_argument(
+        "--noise-level",
+        type=float,
+        default=None,
+        help=(
+            "Noise level for the custom SCM (e.g., 1e-2). "
+            "If set, expects noise-tagged datasets and writes results to a noise-specific directory."
+        ),
+    )
     args = parser.parse_args()
 
     # Set up environment for reproducibility
@@ -1388,4 +1645,8 @@ if __name__ == "__main__":
         algorithm_filter=args.algorithm,
         column_order_filter=args.column_order,
         train_sizes_group=args.train_sizes_group,
+        train_sizes=args.train_sizes,
+        repetitions=args.repetitions,
+        seed_start=args.seed_start,
+        noise_level=args.noise_level,
     )

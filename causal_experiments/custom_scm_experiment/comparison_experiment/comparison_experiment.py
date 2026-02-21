@@ -89,24 +89,37 @@ from tabpfn_extensions import TabPFNClassifier, TabPFNRegressor, unsupervised
 _device_info_printed = False
 
 
+def _format_noise_tag(noise_level: float) -> str:
+    """Format a compact, filesystem-friendly noise tag (e.g., noise1e-2)."""
+    if noise_level == 0:
+        return "noise0"
+    sci = f"{noise_level:.0e}"
+    sci = sci.replace("e-0", "e-").replace("e+0", "e+")
+    return f"noise{sci}"
+
+
 def _load_custom_static_dataset(
     *,
     use_categorical: bool,
     n_samples: int = 6000,
+    noise_level: float | None = None,
 ) -> tuple[np.ndarray, list[str], list[str], dict[int, list[int]], dict[int, dict[str, list[int]]]]:
     """Load the pre-generated custom SCM dataset and graph metadata."""
 
     dataset_kind = "mixed" if use_categorical else "numeric"
     base_name = f"custom_{dataset_kind}_scm_{n_samples}"
+    if noise_level is not None:
+        base_name = f"{base_name}_{_format_noise_tag(noise_level)}"
 
     base_dir = Path(__file__).parent / "generated_static_scm"
     csv_path = base_dir / f"{base_name}.csv"
     graphs_path = base_dir / f"{base_name}.graphs.json"
 
     if not csv_path.exists() or not graphs_path.exists():
+        noise_hint = f" --noise-level {noise_level:g}" if noise_level is not None else ""
         raise FileNotFoundError(
             f"Missing static dataset files for custom SCM ({dataset_kind}). "
-            f"Expected: {csv_path} and {graphs_path}. Run generate_custom_scm_dataset.py first."
+            f"Expected: {csv_path} and {graphs_path}. Run generate_custom_scm_dataset.py{noise_hint} first."
         )
 
     with graphs_path.open("r", encoding="utf-8") as f:
@@ -325,7 +338,16 @@ def run_single_experiment(
         pass
 
 
-def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = False, save_reordered: bool = False, save_synthetic: bool = False, algorithm_filter: str | None = None, column_order_filter: str | None = None):
+def main(
+    test_mode: bool = False,
+    save_every: int = 100,
+    save_datasets: bool = False,
+    save_reordered: bool = False,
+    save_synthetic: bool = False,
+    algorithm_filter: str | None = None,
+    column_order_filter: str | None = None,
+    noise_level: float | None = None,
+):
     """Main experimental pipeline.
     
     Args:
@@ -360,7 +382,11 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
     # This ensures: (1) Same seed = same data across algorithms, (2) Reproducible datasets
 
     # Output configuration (stable filenames, resume-friendly)
-    output_dir = Path("causal_experiments/custom_scm_experiment/comparison_experiment/results")
+    base_results_dir = Path("causal_experiments/custom_scm_experiment/comparison_experiment")
+    results_dir_name = "results"
+    if noise_level is not None:
+        results_dir_name = f"results_{_format_noise_tag(noise_level)}"
+    output_dir = base_results_dir / results_dir_name
     if algorithm_filter and column_order_filter:
         output_file = output_dir / f"results_{algorithm_filter}_{column_order_filter}.csv"
     elif algorithm_filter:
@@ -378,10 +404,14 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
 
     # Choose data type: numeric or mixed (with categorical)
     USE_CATEGORICAL = False  # Set to True for mixed data with categorical features
+    default_noise_level = 0.3 if USE_CATEGORICAL else 1e-5
+    noise_level_used = default_noise_level if noise_level is None else noise_level
+    print(f"Using SCM noise level: {noise_level_used:g}")
 
     X_all, column_names, categorical_cols, dag_static, cpdag_static = _load_custom_static_dataset(
         use_categorical=USE_CATEGORICAL,
         n_samples=6000,
+        noise_level=noise_level,
     )
 
     cpdag_indep_test = "hybrid" if USE_CATEGORICAL else "fisherz"
@@ -894,6 +924,7 @@ def main(test_mode: bool = False, save_every: int = 100, save_datasets: bool = F
                             reordered_graph_dict=reordered_graph_dict,
                             column_ordering_used=column_ordering_used
                         )
+                        result_row["noise_level"] = noise_level_used
 
                         
                         # Get actual column order based on algorithm and ordering strategy
@@ -1109,6 +1140,15 @@ if __name__ == "__main__":
             "For vanilla, DAG, and all CPDAG variants, specify column ordering: original, topological, worst"
         ),
     )
+    parser.add_argument(
+        "--noise-level",
+        type=float,
+        default=None,
+        help=(
+            "Noise level for the custom SCM (e.g., 1e-2). "
+            "If set, expects noise-tagged datasets and writes results to a noise-specific directory."
+        ),
+    )
     args = parser.parse_args()
 
     # Set up environment for reproducibility
@@ -1127,5 +1167,6 @@ if __name__ == "__main__":
         save_reordered=args.save_reordered,
         save_synthetic=args.save_synthetic,
         algorithm_filter=args.algorithm,
-        column_order_filter=args.column_order
+        column_order_filter=args.column_order,
+        noise_level=args.noise_level,
     )

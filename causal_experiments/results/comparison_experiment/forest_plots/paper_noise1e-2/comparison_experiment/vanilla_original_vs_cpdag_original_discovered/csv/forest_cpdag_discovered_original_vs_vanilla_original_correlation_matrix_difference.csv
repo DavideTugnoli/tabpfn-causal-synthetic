@@ -1,0 +1,6 @@
+dataset,train_size,effect,ci_lower,ci_upper,p_value,p_holm,is_significant,metric
+custom_scm_noise1e-2,20,0.0,0.0,0.0,0.0832750040512064,0.1665500081024128,False,correlation_matrix_difference
+custom_scm_noise1e-2,50,0.0,-0.3130409771029883,0.0,0.0081645275289628,0.0163290550579257,False,correlation_matrix_difference
+custom_scm_noise1e-2,100,0.0,0.0,0.0,0.0455141763149142,0.0910283526298285,False,correlation_matrix_difference
+custom_scm_noise1e-2,200,0.0,-0.2296955349953992,0.0,0.0015731036997465,0.0047193110992395,False,correlation_matrix_difference
+custom_scm_noise1e-2,500,0.0,-0.3425868505791655,0.0,0.0027094242270055,0.0081282726810165,False,correlation_matrix_difference

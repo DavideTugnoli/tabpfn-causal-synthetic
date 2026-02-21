@@ -19,11 +19,11 @@ csuite_nonlin_simpson,50,0.0,0.0,0.0,0.5716199076832991,0.5716199076832991,False
 csuite_nonlin_simpson,100,0.0,0.0,0.0,0.4000732209381242,0.4000732209381242,False,correlation_matrix_difference
 csuite_nonlin_simpson,200,0.0,0.0,0.0,0.5272760122384904,0.7028942287108841,False,correlation_matrix_difference
 csuite_nonlin_simpson,500,0.0,0.0,0.0,1.0,1.0,False,correlation_matrix_difference
-csuite_symprod_simpson,20,-0.0410796722733253,-0.0710843904203319,-0.0150210950944796,8.993624149542701e-05,0.0005396174489725,True,correlation_matrix_difference
-csuite_symprod_simpson,50,-0.0300004148347829,-0.0546668419449666,-0.0043160143395783,0.0020648752113698,0.0123892512682192,True,correlation_matrix_difference
-csuite_symprod_simpson,100,-0.0152542862161483,-0.0349242037790716,0.0038571866757022,0.0324649931794824,0.1947899590768946,False,correlation_matrix_difference
-csuite_symprod_simpson,200,-0.0143149450138586,-0.0358015204400821,0.0073993115786863,0.0806947671176439,0.4841686027058636,False,correlation_matrix_difference
-csuite_symprod_simpson,500,-0.0089804852220991,-0.0239131942834417,0.0076463304198182,0.1458322787653961,0.8749936725923767,False,correlation_matrix_difference
+csuite_symprod_simpson,20,0.0,0.0,0.0,1.0,1.0,False,correlation_matrix_difference
+csuite_symprod_simpson,50,0.0,0.0,0.0,0.5558653793331919,1.0,False,correlation_matrix_difference
+csuite_symprod_simpson,100,0.0,0.0,0.0,0.3173105078629141,1.0,False,correlation_matrix_difference
+csuite_symprod_simpson,200,0.0,0.0,0.0,1.0,1.0,False,correlation_matrix_difference
+csuite_symprod_simpson,500,0.0,0.0,0.0,0.3148913589333879,0.9446740768001638,False,correlation_matrix_difference
 csuite_weak_arrows,20,0.0,0.0,0.0,1.0,1.0,False,correlation_matrix_difference
 csuite_weak_arrows,50,0.0,0.0,0.0,0.951920882916512,0.951920882916512,False,correlation_matrix_difference
 csuite_weak_arrows,100,0.0,0.0,0.0,0.9655503599870604,0.9655503599870604,False,correlation_matrix_difference

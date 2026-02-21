@@ -982,11 +982,26 @@ def main(
                                 raise ValueError(f"CPDAG is required for {algorithm} algorithm but got None")
                             
                             # Handle column reordering for CPDAG (like vanilla does)
-                            if (column_order != "original") or (column_order == "original" and random_original_ordering is not None):
+                            should_reorder_cpdag = (
+                                (column_order != "original")
+                                or (column_order == "original" and random_original_ordering is not None)
+                                or (
+                                    custom_vanilla_orderings is not None
+                                    and column_order in custom_vanilla_orderings
+                                )
+                            )
+                            if should_reorder_cpdag:
                                 # Use the same DAG as vanilla does
                                 dag_for_ordering = dag_dict
                                 categorical_indices = [column_names.index(col) for col in categorical_cols] if categorical_cols else None
-                                if column_order == "original" and random_original_ordering is not None:
+                                if custom_vanilla_orderings and column_order in custom_vanilla_orderings:
+                                    column_ordering_used = custom_vanilla_orderings[column_order]
+                                    X_train_reordered = X_train_original[:, column_ordering_used]
+                                    updated_categorical_features = None
+                                    if categorical_indices is not None:
+                                        old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(column_ordering_used)}
+                                        updated_categorical_features = [old_to_new[i] for i in categorical_indices if i in old_to_new]
+                                elif column_order == "original" and random_original_ordering is not None:
                                     column_ordering_used = random_original_ordering
                                     X_train_reordered = X_train_original[:, column_ordering_used]
                                     updated_categorical_features = None

@@ -221,8 +221,8 @@ COMPARISON_SPECS: Dict[str, ComparisonSpec] = {
         baseline="vanilla_original",
         comparator="cpdag_minimal_original",
         baseline_label="Vanilla Original",
-        comparator_label="CPDAG Minimal",
-        title="Vanilla Original vs CPDAG Minimal",
+        comparator_label="Minimal CPDAG",
+        title="Vanilla Original vs Minimal CPDAG",
         group_slug="ordering_original",
         group_label="Original ordering",
     ),
@@ -231,8 +231,8 @@ COMPARISON_SPECS: Dict[str, ComparisonSpec] = {
         baseline="vanilla_original",
         comparator="cpdag_discovered_original",
         baseline_label="Vanilla Original",
-        comparator_label="CPDAG Discovered",
-        title="Vanilla Original vs CPDAG Discovered",
+        comparator_label="Discovered CPDAG",
+        title="Vanilla Original vs Discovered CPDAG",
         group_slug="ordering_original",
         group_label="Original ordering",
     ),
@@ -323,6 +323,15 @@ EXPECTED_DATASET_SLUGS: Tuple[str, ...] = tuple(
     _dataset_slug_from_filename(Path(name)) for name in INTERVENTIONAL_RESULT_FILES
 )
 
+DATASET_FILTER: Set[str] | None = None
+
+
+def _set_expected_dataset_slugs(result_files: Iterable[str]) -> None:
+    global EXPECTED_DATASET_SLUGS
+    EXPECTED_DATASET_SLUGS = tuple(
+        _dataset_slug_from_filename(Path(name)) for name in result_files
+    )
+
 # Mapping from dataset names to acronyms for combined plots
 DATASET_ACRONYMS: Dict[str, str] = {
     "csuite_large_backdoor": "CLB",
@@ -332,6 +341,7 @@ DATASET_ACRONYMS: Dict[str, str] = {
     "csuite_symprod_simpson": "CSS",
     "csuite_weak_arrows": "CWA",
     "custom_scm": "CSM",
+    "custom_scm_noise1e-2": "CSMn2",
     "simglucose": "SGL",
 }
 
@@ -392,19 +402,21 @@ def _collect_forest_rows(metric: str, comparison: ComparisonSpec) -> List[Forest
     if not STAT_TESTS_ROOT.exists():
         return rows
 
-    allowed_datasets = set(EXPECTED_DATASET_SLUGS)
-    
-    # Include simglucose for comparisons involving vanilla_original or vanilla_topological
-    if (comparison.baseline in ("vanilla_original", "vanilla_topological") or
-        comparison.comparator in ("vanilla_original", "vanilla_topological")):
-        # Add simglucose and any variants that might exist
-        allowed_datasets.add("simglucose")
-        allowed_datasets.add("simglucose_static_scm")
-        # Also check for any directory starting with "simglucose" in stat_tests
-        if STAT_TESTS_ROOT.exists():
-            for dataset_dir in STAT_TESTS_ROOT.iterdir():
-                if dataset_dir.is_dir() and dataset_dir.name.startswith("simglucose"):
-                    allowed_datasets.add(dataset_dir.name)
+    if DATASET_FILTER is not None:
+        allowed_datasets = set(DATASET_FILTER)
+    else:
+        allowed_datasets = set(EXPECTED_DATASET_SLUGS)
+        # Include simglucose for comparisons involving vanilla_original or vanilla_topological
+        if (comparison.baseline in ("vanilla_original", "vanilla_topological") or
+            comparison.comparator in ("vanilla_original", "vanilla_topological")):
+            # Add simglucose and any variants that might exist
+            allowed_datasets.add("simglucose")
+            allowed_datasets.add("simglucose_static_scm")
+            # Also check for any directory starting with "simglucose" in stat_tests
+            if STAT_TESTS_ROOT.exists():
+                for dataset_dir in STAT_TESTS_ROOT.iterdir():
+                    if dataset_dir.is_dir() and dataset_dir.name.startswith("simglucose"):
+                        allowed_datasets.add(dataset_dir.name)
 
     for dataset_dir in sorted(STAT_TESTS_ROOT.iterdir()):
         if not dataset_dir.is_dir():
@@ -604,6 +616,14 @@ def _reset_paper_root() -> None:
     PAPER_ROOT.mkdir(parents=True, exist_ok=True)
 
 
+def _normalize_noise_layout_fix_root(path: Path) -> Path:
+    """Map legacy paper_noise1e-2/layout_fix paths to the promoted root."""
+    normalized = str(path)
+    normalized = normalized.replace("/paper_noise1e-2/layout_fix/", "/paper_noise1e-2/")
+    normalized = normalized.replace("/paper_noise1e-2/layout_fix", "/paper_noise1e-2")
+    return Path(normalized)
+
+
 
 
 # Fixed figure sizes to ensure consistent dimensions across plots
@@ -654,6 +674,37 @@ def _draw_left_aligned_yticklabels(
             fontsize=font_size,
             annotation_clip=False,
         )
+
+
+def _needs_extra_left(labels: Sequence[str]) -> bool:
+    return any(("CSM-1e-2" in label) or ("CSMn2" in label) for label in labels)
+
+
+def _compute_left_adjustments(
+    labels: Sequence[str],
+    base_tick_offset: float,
+    base_labelpad: float,
+    combined: bool = False,
+) -> Tuple[float, float]:
+    if not _needs_extra_left(labels):
+        return base_tick_offset, base_labelpad
+
+    ratio = TICK_FONT_SIZE_COMBINED / TICK_FONT_SIZE_SINGLE if combined else 1.0
+    # Separate tuning for single vs combined plots.
+    if combined:
+        # Combined plots need a visible label->graph gap while keeping y-label readable.
+        extra_tick = 18.0 * ratio
+        extra_labelpad = 14.0 * ratio
+    else:
+        # Singles: preserve the graph gap and push "Dataset" slightly further left.
+        extra_tick = 22.0 * ratio
+        extra_labelpad = 16.0 * ratio
+
+    tick_offset = base_tick_offset - extra_tick
+    labelpad = base_labelpad + extra_labelpad
+    return tick_offset, labelpad
+
+
 
 
 def plot_forest(
@@ -751,6 +802,13 @@ def plot_forest(
         csv_path = csv_dir / f"{file_stem}.csv" if csv_dir is not None else None
 
         caption_text = _build_caption_text(metric_title, comparison, direction) if show_caption else None
+        plot_labels = [dataset_labels[name] for name in plot_datasets]
+        tick_offset, ylabel_pad = _compute_left_adjustments(
+            plot_labels,
+            Y_TICK_LABEL_OFFSET_SINGLE,
+            X_LABEL_PAD + Y_LABEL_EXTRA_PAD,
+            combined=False,
+        )
 
         def _callback(plt_mod: Any) -> None:
             setup_forest_plot_style()
@@ -812,13 +870,13 @@ def plot_forest(
 
             # Explicitly set tick label sizes to ensure consistency with combined plots
             y_positions = [(len(plot_datasets) - i) * DATASET_SPACING for i in range(len(plot_datasets))]
-            labels = [dataset_labels[name] for name in plot_datasets]
+            labels = plot_labels
             _draw_left_aligned_yticklabels(
                 ax,
                 y_positions,
                 labels,
                 font_size=TICK_FONT_SIZE_SINGLE,
-                x_offset_points=Y_TICK_LABEL_OFFSET_SINGLE,
+                x_offset_points=tick_offset,
             )
             # Set tick parameters with explicit direction="out" for consistency
             ax.tick_params(axis="y", labelsize=TICK_FONT_SIZE_SINGLE, direction="out")
@@ -830,7 +888,7 @@ def plot_forest(
             ax.set_ylabel(
                 "Dataset",
                 fontsize=LABEL_FONT_SIZE,
-                labelpad=X_LABEL_PAD + Y_LABEL_EXTRA_PAD,
+                labelpad=ylabel_pad,
             )
 
             if direction == "lower":
@@ -845,6 +903,11 @@ def plot_forest(
 
             handles = [legend_entries[ts] for ts in train_sizes if ts in legend_entries]
             labels = [handle.get_label() for handle in handles]
+            is_custom_noise_case = _needs_extra_left(plot_labels)
+            legend_fontsize = LEGEND_FONT_SIZE
+            legend_title_fontsize = LEGEND_TITLE_FONT_SIZE
+            legend_columnspacing = LEGEND_COLUMNSPACING_SINGLE
+            legend_handletextpad = LEGEND_HANDLETEXTPAD
 
             # Legend below x-axis label, using axes coordinates for reliable positioning
             # Adjust anchor for simglucose plots to maintain physical distance from axis
@@ -858,6 +921,17 @@ def plot_forest(
                 legend_y_anchor = -0.15
 
             if handles:
+                if is_custom_noise_case and len(handles) > 5:
+                    # Keep one-row legend like other plots, but compact spacing to avoid clipping.
+                    labels = [label.replace("Train ", "Train") for label in labels]
+                    if is_simglucose_plot:
+                        legend_y_anchor = -0.46
+                    else:
+                        legend_y_anchor = -0.18
+                    legend_fontsize = max(LEGEND_FONT_SIZE - 2, 12)
+                    legend_title_fontsize = max(LEGEND_TITLE_FONT_SIZE - 2, 12)
+                    legend_columnspacing = 0.8
+                    legend_handletextpad = 0.5
                 ax.legend(
                     handles,
                     labels,
@@ -865,27 +939,38 @@ def plot_forest(
                     bbox_to_anchor=(0.5, legend_y_anchor),  # Below subplot in axes coords
                     ncol=len(handles),
                     frameon=False,
-                    fontsize=LEGEND_FONT_SIZE,
+                    fontsize=legend_fontsize,
                     title="Train Size",
-                    title_fontsize=LEGEND_TITLE_FONT_SIZE,
-                    columnspacing=LEGEND_COLUMNSPACING_SINGLE,
-                    handletextpad=LEGEND_HANDLETEXTPAD,
+                    title_fontsize=legend_title_fontsize,
+                    columnspacing=legend_columnspacing,
+                    handletextpad=legend_handletextpad,
                 )
 
+            single_bottom_margin = SINGLE_BOTTOM_MARGIN
+            simglucose_bottom_margin = SIMGLUCOSE_BOTTOM_MARGIN
+            if is_custom_noise_case and len(handles) > 5:
+                single_bottom_margin = max(SINGLE_BOTTOM_MARGIN, 0.24)
+                simglucose_bottom_margin = max(SIMGLUCOSE_BOTTOM_MARGIN, 0.37)
+
             # FIXED margins for ALL single plots - ensures uniform dimensions
+            # Increase left margin slightly for noise=1e-2 plots to prevent label overlap
+            left_margin = SINGLE_LEFT_MARGIN
+            if is_custom_noise_case:
+                left_margin = max(SINGLE_LEFT_MARGIN, 0.22)  # Increase from default (~0.15) to 0.22 for noise=1e-2
+            
             # Adjust margins for simglucose plots to preserve physical spacing with reduced height
             if is_simglucose_plot:
                 fig.subplots_adjust(
-                    left=SINGLE_LEFT_MARGIN,
+                    left=left_margin,
                     right=SINGLE_RIGHT_MARGIN,
-                    bottom=SIMGLUCOSE_BOTTOM_MARGIN,
+                    bottom=simglucose_bottom_margin,
                     top=SIMGLUCOSE_TOP_MARGIN,
                 )
             else:
                 fig.subplots_adjust(
-                    left=SINGLE_LEFT_MARGIN,
+                    left=left_margin,
                     right=SINGLE_RIGHT_MARGIN,
-                    bottom=SINGLE_BOTTOM_MARGIN,
+                    bottom=single_bottom_margin,
                     top=SINGLE_TOP_MARGIN,
                 )
 
@@ -894,16 +979,16 @@ def plot_forest(
             def _no_tight_layout(*args: Any, **kwargs: Any) -> None:
                 if is_simglucose_plot:
                     fig.subplots_adjust(
-                        left=SINGLE_LEFT_MARGIN,
+                        left=left_margin,
                         right=SINGLE_RIGHT_MARGIN,
-                        bottom=SIMGLUCOSE_BOTTOM_MARGIN,
+                        bottom=simglucose_bottom_margin,
                         top=SIMGLUCOSE_TOP_MARGIN,
                     )
                 else:
                     fig.subplots_adjust(
-                        left=SINGLE_LEFT_MARGIN,
+                        left=left_margin,
                         right=SINGLE_RIGHT_MARGIN,
-                        bottom=SINGLE_BOTTOM_MARGIN,
+                        bottom=single_bottom_margin,
                         top=SINGLE_TOP_MARGIN,
                     )
                 plt_mod.tight_layout = original_tight_layout
@@ -972,7 +1057,7 @@ def plot_cpdag_combined_forest(
     show_caption: bool = False,
     no_csv: bool = False,
 ) -> None:
-    """Generate a combined forest plot showing Vanilla vs CPDAG Minimal and Vanilla vs CPDAG Discovered."""
+    """Generate a combined forest plot showing Vanilla vs Minimal CPDAG and Vanilla vs Discovered CPDAG."""
     if metric not in METRIC_CONFIG:
         print(f"[WARN] Unknown metric '{metric}' for CPDAG combined forest plot.")
         return
@@ -1100,7 +1185,7 @@ def plot_cpdag_combined_forest(
 
         combined_legend_entries: Dict[int, Line2D] = {}
 
-        # Subplot 1: Vanilla vs CPDAG Minimal
+        # Subplot 1: Vanilla vs Minimal CPDAG
         ax1 = axes[0]
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
@@ -1132,10 +1217,15 @@ def plot_cpdag_combined_forest(
             ax1.set_ylabel(
                 "Dataset",
                 fontsize=LABEL_FONT_SIZE_COMBINED,
-                labelpad=X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                labelpad=_compute_left_adjustments(
+                    [dataset_labels[name] for name in datasets],
+                    Y_TICK_LABEL_OFFSET_COMBINED,
+                    X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                    combined=True,
+                )[1],
             )
 
-        # Subplot 2: Vanilla vs CPDAG Discovered
+        # Subplot 2: Vanilla vs Discovered CPDAG
         ax2 = axes[1]
         ax2.spines['top'].set_visible(False)
         ax2.spines['right'].set_visible(False)
@@ -1196,17 +1286,23 @@ def plot_cpdag_combined_forest(
             # Explicitly set tick label sizes to ensure consistency across all plots
             y_positions = [(len(datasets) - i) * DATASET_SPACING for i in range(len(datasets))]
             labels = [dataset_labels[name] for name in datasets]
+            tick_offset_combined, _ = _compute_left_adjustments(
+                labels,
+                Y_TICK_LABEL_OFFSET_COMBINED,
+                X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                combined=True,
+            )
             _draw_left_aligned_yticklabels(
                 ax1,
                 y_positions,
                 labels,
                 font_size=TICK_FONT_SIZE_COMBINED,
-                x_offset_points=Y_TICK_LABEL_OFFSET_COMBINED,
+                x_offset_points=tick_offset_combined,
             )
             ax1.tick_params(axis="y", labelsize=TICK_FONT_SIZE_COMBINED)
             ax1.tick_params(axis="x", labelsize=TICK_FONT_SIZE_COMBINED, pad=TICK_PAD_X_COMBINED)
             ax1.tick_params(axis="both", which="both", direction="out", left=True, right=False, bottom=True, top=False)
-        
+
         if not df_discovered.empty:
             ax2.set_ylim(0.5 * DATASET_SPACING, (n_datasets + 0.5) * DATASET_SPACING)
             # Hide default y-axis tick labels for right subplot
@@ -1241,7 +1337,7 @@ def plot_cpdag_combined_forest(
                 loc="upper center",
                 bbox_to_anchor=(0.5, legend_y),
                 bbox_transform=fig.transFigure,
-                ncol=len(handles),
+                ncol=len(handles),  # Keep one-row legend layout consistent with existing plots
                 frameon=False,
                 fontsize=LEGEND_FONT_SIZE_COMBINED,
                 title="Train Size",
@@ -1252,13 +1348,18 @@ def plot_cpdag_combined_forest(
         else:
             bottom_margin = COMBINED_BOTTOM_MARGIN_NO_LEGEND
 
+        # Keep the same margins used by standard plots.
+        left_margin = 0.20
+        right_margin = 0.98
+        wspace = COMBINED_WSPACE_DUO
+
         # Maximize horizontal space; use consistent top margin from config
         fig.subplots_adjust(
-            left=0.20,
-            right=0.98,
+            left=left_margin,
+            right=right_margin,
             top=COMBINED_TOP_MARGIN,
             bottom=bottom_margin,
-            wspace=COMBINED_WSPACE_DUO,
+            wspace=wspace,
         )
 
         # Align x-axis tick labels vertically across all panels
@@ -1294,7 +1395,7 @@ def plot_cpdag_combined_forest(
         original_tight_layout = plt_mod.tight_layout
         def _no_tight_layout(*args: Any, **kwargs: Any) -> None:
             fig.subplots_adjust(
-                left=0.20,
+                left=left_margin,
                 right=0.98,
                 top=COMBINED_TOP_MARGIN,
                 bottom=bottom_margin,
@@ -1360,9 +1461,9 @@ def plot_dag_cpdag_minimal_combined_forest(
     show_caption: bool = False,
     no_csv: bool = False,
 ) -> None:
-    """Generate a combined forest plot showing Vanilla vs DAG (left) and Vanilla vs CPDAG Minimal (right)."""
+    """Generate a combined forest plot showing Vanilla vs DAG (left) and Vanilla vs Minimal CPDAG (right)."""
     if metric not in METRIC_CONFIG:
-        print(f"[WARN] Unknown metric '{metric}' for DAG+CPDAG Minimal combined forest plot.")
+        print(f"[WARN] Unknown metric '{metric}' for DAG+Minimal CPDAG combined forest plot.")
         return
 
     # Get data for the two comparisons
@@ -1370,7 +1471,7 @@ def plot_dag_cpdag_minimal_combined_forest(
     vanilla_vs_minimal = _collect_forest_rows(metric, COMPARISON_SPECS["original_cpdag_minimal_vs_vanilla"])
 
     if not vanilla_vs_dag and not vanilla_vs_minimal:
-        print("[INFO] No data available for DAG+CPDAG Minimal combined plot.")
+        print("[INFO] No data available for DAG+Minimal CPDAG combined plot.")
         return
 
     # Build dataframes
@@ -1391,7 +1492,7 @@ def plot_dag_cpdag_minimal_combined_forest(
 
     datasets = sorted(all_datasets)
     if not datasets:
-        print("[INFO] No datasets available for DAG+CPDAG Minimal combined plot.")
+        print("[INFO] No datasets available for DAG+Minimal CPDAG combined plot.")
         return
 
     # Build dataset labels
@@ -1421,7 +1522,7 @@ def plot_dag_cpdag_minimal_combined_forest(
         if not pd.isna(ts)
     })
     if not train_sizes:
-        print("[INFO] No train sizes detected for DAG+CPDAG Minimal combined plot.")
+        print("[INFO] No train sizes detected for DAG+Minimal CPDAG combined plot.")
         return
 
     offsets = _build_offsets(train_sizes)
@@ -1523,10 +1624,15 @@ def plot_dag_cpdag_minimal_combined_forest(
             ax1.set_ylabel(
                 "Dataset",
                 fontsize=LABEL_FONT_SIZE_COMBINED,
-                labelpad=X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                labelpad=_compute_left_adjustments(
+                    [dataset_labels[name] for name in datasets],
+                    Y_TICK_LABEL_OFFSET_COMBINED,
+                    X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                    combined=True,
+                )[1],
             )
 
-        # Subplot 2: Vanilla vs CPDAG Minimal
+        # Subplot 2: Vanilla vs Minimal CPDAG
         ax2 = axes[1]
         ax2.spines['top'].set_visible(False)
         ax2.spines['right'].set_visible(False)
@@ -1577,10 +1683,6 @@ def plot_dag_cpdag_minimal_combined_forest(
         # Each panel gets its own optimal scale (no shared limits for CPDAG plots)
         if not df_dag.empty:
             apply_xaxis_tick_locator(ax1, df=df_dag)
-            # Shift Y-axis slightly left to avoid overlap with lower CI
-            xlim = ax1.get_xlim()
-            x_range = xlim[1] - xlim[0]
-            ax1.set_xlim(left=xlim[0] - 0.05 * x_range)
         if not df_minimal.empty:
             apply_xaxis_tick_locator(ax2, df=df_minimal)
 
@@ -1591,17 +1693,23 @@ def plot_dag_cpdag_minimal_combined_forest(
             # Explicitly set tick label sizes to ensure consistency across all plots
             y_positions = [(len(datasets) - i) * DATASET_SPACING for i in range(len(datasets))]
             labels = [dataset_labels[name] for name in datasets]
+            tick_offset_combined, _ = _compute_left_adjustments(
+                labels,
+                Y_TICK_LABEL_OFFSET_COMBINED,
+                X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                combined=True,
+            )
             _draw_left_aligned_yticklabels(
                 ax1,
                 y_positions,
                 labels,
                 font_size=TICK_FONT_SIZE_COMBINED,
-                x_offset_points=Y_TICK_LABEL_OFFSET_COMBINED,
+                x_offset_points=tick_offset_combined,
             )
             ax1.tick_params(axis="y", labelsize=TICK_FONT_SIZE_COMBINED)
             ax1.tick_params(axis="x", labelsize=TICK_FONT_SIZE_COMBINED, pad=TICK_PAD_X_COMBINED)
             ax1.tick_params(axis="both", which="both", direction="out", left=True, right=False, bottom=True, top=False)
-        
+
         if not df_minimal.empty:
             ax2.set_ylim(0.5 * DATASET_SPACING, (n_datasets + 0.5) * DATASET_SPACING)
             # Hide default y-axis tick labels for right subplot
@@ -1647,13 +1755,18 @@ def plot_dag_cpdag_minimal_combined_forest(
         else:
             bottom_margin = COMBINED_BOTTOM_MARGIN_NO_LEGEND
 
+        # Keep the same margins used by standard plots.
+        left_margin = 0.20
+        right_margin = 0.98
+        wspace = COMBINED_WSPACE_DUO
+
         # Maximize horizontal space; use consistent top margin from config
         fig.subplots_adjust(
-            left=0.20,
-            right=0.98,
+            left=left_margin,
+            right=right_margin,
             top=COMBINED_TOP_MARGIN,
             bottom=bottom_margin,
-            wspace=COMBINED_WSPACE_DUO,
+            wspace=wspace,
         )
 
         # Align x-axis tick labels vertically across all panels
@@ -1689,7 +1802,7 @@ def plot_dag_cpdag_minimal_combined_forest(
         original_tight_layout = plt_mod.tight_layout
         def _no_tight_layout(*args: Any, **kwargs: Any) -> None:
             fig.subplots_adjust(
-                left=0.20,
+                left=left_margin,
                 right=0.98,
                 top=COMBINED_TOP_MARGIN,
                 bottom=bottom_margin,
@@ -1744,7 +1857,7 @@ def plot_dag_cpdag_minimal_combined_forest(
             combined_df.to_csv(csv_path, index=False)
 
     print(
-        f"[SUCCESS] Saved DAG+CPDAG Minimal combined forest plot for metric "
+        f"[SUCCESS] Saved DAG+Minimal CPDAG combined forest plot for metric "
         f"{metric} in {pdf_path}"
     )
 
@@ -1916,7 +2029,12 @@ def plot_vanilla_ordering_combined_forest(
             ax1.set_ylabel(
                 "Dataset",
                 fontsize=LABEL_FONT_SIZE_COMBINED,
-                labelpad=X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                labelpad=_compute_left_adjustments(
+                    [dataset_labels[name] for name in datasets],
+                    Y_TICK_LABEL_OFFSET_COMBINED,
+                    X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                    combined=True,
+                )[1],
             )
             
             # Set tight y-axis limits
@@ -1926,12 +2044,18 @@ def plot_vanilla_ordering_combined_forest(
             # Explicitly set tick label sizes to ensure consistency across all plots
             y_positions = [(len(datasets) - i) * DATASET_SPACING for i in range(len(datasets))]
             labels = [dataset_labels[name] for name in datasets]
+            tick_offset_combined, _ = _compute_left_adjustments(
+                labels,
+                Y_TICK_LABEL_OFFSET_COMBINED,
+                X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                combined=True,
+            )
             _draw_left_aligned_yticklabels(
                 ax1,
                 y_positions,
                 labels,
                 font_size=TICK_FONT_SIZE_COMBINED,
-                x_offset_points=Y_TICK_LABEL_OFFSET_COMBINED,
+                x_offset_points=tick_offset_combined,
             )
             ax1.tick_params(axis="y", labelsize=TICK_FONT_SIZE_COMBINED)
             ax1.tick_params(axis="x", labelsize=TICK_FONT_SIZE_COMBINED, pad=TICK_PAD_X_COMBINED)
@@ -2036,13 +2160,18 @@ def plot_vanilla_ordering_combined_forest(
         else:
             bottom_margin = COMBINED_BOTTOM_MARGIN_NO_LEGEND
 
+        # Keep the same margins used by standard plots.
+        left_margin = 0.20
+        right_margin = 0.98
+        wspace = COMBINED_WSPACE_DUO
+
         # Maximize horizontal space; use consistent top margin from config
         fig.subplots_adjust(
-            left=0.20,
-            right=0.98,
+            left=left_margin,
+            right=right_margin,
             top=COMBINED_TOP_MARGIN,
             bottom=bottom_margin,
-            wspace=COMBINED_WSPACE_DUO,
+            wspace=wspace,
         )
 
         # Align x-axis tick labels vertically across all panels
@@ -2078,7 +2207,7 @@ def plot_vanilla_ordering_combined_forest(
         original_tight_layout = plt_mod.tight_layout
         def _no_tight_layout(*args: Any, **kwargs: Any) -> None:
             fig.subplots_adjust(
-                left=0.20,
+                left=left_margin,
                 right=0.98,
                 top=COMBINED_TOP_MARGIN,
                 bottom=bottom_margin,
@@ -2308,7 +2437,12 @@ def plot_vanilla_topo_dag_combined_forest(
             ax1.set_ylabel(
                 "Dataset",
                 fontsize=LABEL_FONT_SIZE_COMBINED,
-                labelpad=X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                labelpad=_compute_left_adjustments(
+                    [dataset_labels[name] for name in datasets],
+                    Y_TICK_LABEL_OFFSET_COMBINED,
+                    X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                    combined=True,
+                )[1],
             )
             
             # Set tight y-axis limits
@@ -2318,12 +2452,18 @@ def plot_vanilla_topo_dag_combined_forest(
             # Explicitly set tick label sizes to ensure consistency across all plots
             y_positions = [(len(datasets) - i) * DATASET_SPACING for i in range(len(datasets))]
             labels = [dataset_labels[name] for name in datasets]
+            tick_offset_combined, _ = _compute_left_adjustments(
+                labels,
+                Y_TICK_LABEL_OFFSET_COMBINED,
+                X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                combined=True,
+            )
             _draw_left_aligned_yticklabels(
                 ax1,
                 y_positions,
                 labels,
                 font_size=TICK_FONT_SIZE_COMBINED,
-                x_offset_points=Y_TICK_LABEL_OFFSET_COMBINED,
+                x_offset_points=tick_offset_combined,
             )
             ax1.tick_params(axis="y", labelsize=TICK_FONT_SIZE_COMBINED)
             ax1.tick_params(axis="x", labelsize=TICK_FONT_SIZE_COMBINED, pad=TICK_PAD_X_COMBINED)
@@ -2438,13 +2578,18 @@ def plot_vanilla_topo_dag_combined_forest(
         else:
             bottom_margin = COMBINED_BOTTOM_MARGIN_NO_LEGEND
 
+        # Keep the same margins used by standard plots.
+        left_margin = 0.20
+        right_margin = 0.98
+        wspace = COMBINED_WSPACE_DUO
+
         # Maximize horizontal space; use consistent top margin from config
         fig.subplots_adjust(
-            left=0.20,
-            right=0.98,
+            left=left_margin,
+            right=right_margin,
             top=COMBINED_TOP_MARGIN,
             bottom=bottom_margin,
-            wspace=COMBINED_WSPACE_DUO,
+            wspace=wspace,
         )
 
         # Align x-axis tick labels vertically across all panels
@@ -2480,7 +2625,7 @@ def plot_vanilla_topo_dag_combined_forest(
         original_tight_layout = plt_mod.tight_layout
         def _no_tight_layout(*args: Any, **kwargs: Any) -> None:
             fig.subplots_adjust(
-                left=0.20,
+                left=left_margin,
                 right=0.98,
                 top=COMBINED_TOP_MARGIN,
                 bottom=bottom_margin,
@@ -2704,7 +2849,12 @@ def plot_vanilla_topo_simglucose_combined_forest(
             ax1.set_ylabel(
                 "Dataset",
                 fontsize=LABEL_FONT_SIZE_COMBINED,
-                labelpad=X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                labelpad=_compute_left_adjustments(
+                    [dataset_labels_left[name] for name in datasets_left],
+                    Y_TICK_LABEL_OFFSET_COMBINED,
+                    X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                    combined=True,
+                )[1],
             )
             
             # Set tight y-axis limits for left panel
@@ -2714,12 +2864,18 @@ def plot_vanilla_topo_simglucose_combined_forest(
             # Set tick labels for left panel
             y_positions_left = [(len(datasets_left) - i) * DATASET_SPACING for i in range(len(datasets_left))]
             labels_left = [dataset_labels_left[name] for name in datasets_left]
+            tick_offset_combined, _ = _compute_left_adjustments(
+                labels_left,
+                Y_TICK_LABEL_OFFSET_COMBINED,
+                X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                combined=True,
+            )
             _draw_left_aligned_yticklabels(
                 ax1,
                 y_positions_left,
                 labels_left,
                 font_size=TICK_FONT_SIZE_COMBINED,
-                x_offset_points=Y_TICK_LABEL_OFFSET_COMBINED,
+                x_offset_points=tick_offset_combined,
             )
             ax1.tick_params(axis="y", labelsize=TICK_FONT_SIZE_COMBINED)
             ax1.tick_params(axis="x", labelsize=TICK_FONT_SIZE_COMBINED, pad=TICK_PAD_X_COMBINED)
@@ -2757,12 +2913,18 @@ def plot_vanilla_topo_simglucose_combined_forest(
             # Set tick labels for right panel (simglucose)
             y_positions_right = [(len(datasets_right) - i) * DATASET_SPACING for i in range(len(datasets_right))]
             labels_right = [dataset_labels_right[name] for name in datasets_right]
+            tick_offset_combined_right, _ = _compute_left_adjustments(
+                labels_right,
+                Y_TICK_LABEL_OFFSET_COMBINED,
+                X_LABEL_PAD + Y_LABEL_EXTRA_PAD_COMBINED,
+                combined=True,
+            )
             _draw_left_aligned_yticklabels(
                 ax2,
                 y_positions_right,
                 labels_right,
                 font_size=TICK_FONT_SIZE_COMBINED,
-                x_offset_points=Y_TICK_LABEL_OFFSET_COMBINED,
+                x_offset_points=tick_offset_combined_right,
             )
             ax2.tick_params(axis="y", labelsize=TICK_FONT_SIZE_COMBINED)
             ax2.tick_params(axis="x", labelsize=TICK_FONT_SIZE_COMBINED, pad=TICK_PAD_X_COMBINED)
@@ -2798,9 +2960,11 @@ def plot_vanilla_topo_simglucose_combined_forest(
         else:
             bottom_margin = COMBINED_BOTTOM_MARGIN_NO_LEGEND
 
+        left_margin = 0.20
+
         # Maximize horizontal space; use consistent top margin from config
         fig.subplots_adjust(
-            left=0.20,
+            left=left_margin,
             right=0.98,
             top=COMBINED_TOP_MARGIN,
             bottom=bottom_margin,
@@ -2841,7 +3005,7 @@ def plot_vanilla_topo_simglucose_combined_forest(
         original_tight_layout = plt_mod.tight_layout
         def _no_tight_layout(*args: Any, **kwargs: Any) -> None:
             fig.subplots_adjust(
-                left=0.20,
+                left=left_margin,
                 right=0.98,
                 top=COMBINED_TOP_MARGIN,
                 bottom=bottom_margin,
@@ -2904,14 +3068,39 @@ def main(
     show_caption: bool = False,
     recompute_stats: bool = True,
     no_csv: bool = False,
+    result_files: Sequence[str] | None = None,
+    dataset_slugs: Sequence[str] | None = None,
+    paper_root: Path | None = None,
 ) -> None:
+    global PAPER_ROOT, DATASET_FILTER
     metric_names = tuple(metric_names)
     comparison_keys = tuple(comparison_keys)
-    result_files = [str(SCRIPT_DIR / name) if not Path(name).is_absolute() else str(Path(name))
-                    for name in interventional_stats.discover_result_files()]
+    active_paper_root = PAPER_ROOT
+    if paper_root is not None:
+        PAPER_ROOT = _normalize_noise_layout_fix_root(Path(paper_root))
+        active_paper_root = PAPER_ROOT
+    if dataset_slugs is not None:
+        DATASET_FILTER = {str(slug).strip() for slug in dataset_slugs if str(slug).strip()}
+    else:
+        DATASET_FILTER = None
+    if result_files is None:
+        discovered = interventional_stats.discover_result_files()
+    else:
+        discovered = list(result_files)
+    _set_expected_dataset_slugs(discovered)
+    # Guardrail: keep the main paper run free from noise-1e-2 datasets unless explicitly requested.
+    # Noise-specific runs use paper_noise1e-2 roots or explicit dataset/result-file overrides.
+    if DATASET_FILTER is None and "paper_noise1e-2" not in str(active_paper_root):
+        filtered_slugs = {
+            _dataset_slug_from_filename(Path(name))
+            for name in discovered
+            if "noise1e-2" not in _dataset_slug_from_filename(Path(name))
+        }
+        if filtered_slugs:
+            DATASET_FILTER = filtered_slugs
     _ensure_dir(STAT_TESTS_ROOT)
     if recompute_stats:
-        _ensure_stat_tests_from_csvs(result_files, metric_names)
+        _ensure_stat_tests_from_csvs(discovered, metric_names)
     _reset_paper_root()
 
     for metric in metric_names:
@@ -2932,7 +3121,7 @@ def main(
         for metric in metric_names:
             plot_cpdag_combined_forest(metric, show_caption=show_caption, no_csv=no_csv)
 
-    # Generate DAG+CPDAG Minimal combined plots if both comparisons are requested
+    # Generate DAG+Minimal CPDAG combined plots if both comparisons are requested
     if ("cross_dag_topological_vs_vanilla_original" in comparison_keys and
         "original_cpdag_minimal_vs_vanilla" in comparison_keys):
         for metric in metric_names:
@@ -2992,6 +3181,24 @@ def parse_args() -> argparse.Namespace:
         help="Skip recomputing statistical tests (reuse existing results)",
     )
     parser.add_argument(
+        "--result-files",
+        nargs="+",
+        default=None,
+        help="Override the list of interventional result CSVs to process.",
+    )
+    parser.add_argument(
+        "--dataset-slugs",
+        nargs="+",
+        default=None,
+        help="Restrict plots to the specified dataset slugs.",
+    )
+    parser.add_argument(
+        "--paper-root",
+        type=Path,
+        default=None,
+        help="Override the output folder for paper-ready plots.",
+    )
+    parser.add_argument(
         "--no-csv",
         dest="no_csv",
         action="store_true",
@@ -3009,4 +3216,7 @@ if __name__ == "__main__":
         show_caption=args.caption,
         recompute_stats=not args.skip_stats,
         no_csv=args.no_csv,
+        result_files=args.result_files,
+        dataset_slugs=args.dataset_slugs,
+        paper_root=args.paper_root,
     )
