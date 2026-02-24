@@ -1484,6 +1484,14 @@ def plot_dag_cpdag_minimal_combined_forest(
     if not df_minimal.empty:
         df_minimal = df_minimal[~df_minimal["dataset"].str.startswith("simglucose", na=False)].copy()
 
+    # Keep canonical paper plots free from noise-specific datasets unless explicitly
+    # exporting under a noise paper root.
+    if "paper_noise1e-2" not in str(PAPER_ROOT):
+        if not df_dag.empty:
+            df_dag = df_dag[~df_dag["dataset"].str.contains("noise1e-2", na=False)].copy()
+        if not df_minimal.empty:
+            df_minimal = df_minimal[~df_minimal["dataset"].str.contains("noise1e-2", na=False)].copy()
+
     # Get all datasets (simglucose already filtered out)
     all_datasets = set()
     for df in [df_dag, df_minimal]:
@@ -1679,12 +1687,23 @@ def plot_dag_cpdag_minimal_combined_forest(
             )
             ax2.set_ylabel("")
 
-        # Apply individual tick locators and limits for each panel
-        # Each panel gets its own optimal scale (no shared limits for CPDAG plots)
+        # Use a shared x-axis scale across both panels for direct comparability.
+        shared_xlim = _calculate_shared_xlim_from_dataframes(
+            [df for df in [df_dag, df_minimal] if not df.empty],
+            step=0.2,
+        )
+        if metric == "ate_difference":
+            # Keep the established paper scale for this combined ATE plot.
+            shared_xlim = (min(shared_xlim[0], -0.2), max(shared_xlim[1], 1.6))
+
         if not df_dag.empty:
-            apply_xaxis_tick_locator(ax1, df=df_dag)
+            apply_xaxis_tick_locator(ax1, shared_xlim=shared_xlim)
+            ax1.xaxis.set_major_locator(MultipleLocator(0.2))
+            ax1.xaxis.set_major_formatter(FormatStrFormatter("%.1f"))
         if not df_minimal.empty:
-            apply_xaxis_tick_locator(ax2, df=df_minimal)
+            apply_xaxis_tick_locator(ax2, shared_xlim=shared_xlim)
+            ax2.xaxis.set_major_locator(MultipleLocator(0.2))
+            ax2.xaxis.set_major_formatter(FormatStrFormatter("%.1f"))
 
         # Set tight y-axis limits for both panels
         n_datasets = len(datasets)
@@ -1816,12 +1835,18 @@ def plot_dag_cpdag_minimal_combined_forest(
 
     # Save combined CSV with only essential columns
     essential_columns = ["dataset", "train_size", "effect", "ci_lower", "ci_upper", "p_value", "p_holm", "comparison", "holm_significant_stepdown"]
+    exclude_noise = "paper_noise1e-2" not in str(PAPER_ROOT)
     combined_rows = []
     for data, comparison_name in [(vanilla_vs_dag, "vanilla_vs_dag"),
                                  (vanilla_vs_minimal, "vanilla_vs_minimal")]:
         if data:
             for row in data:
                 row_dict = dict(row.__dict__)
+                dataset_name = str(row_dict.get("dataset", ""))
+                if dataset_name.startswith("simglucose"):
+                    continue
+                if exclude_noise and "noise1e-2" in dataset_name:
+                    continue
                 row_dict["comparison"] = comparison_name
                 # Keep only essential columns
                 filtered_dict = {k: v for k, v in row_dict.items() if k in essential_columns}

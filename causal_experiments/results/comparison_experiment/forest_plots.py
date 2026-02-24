@@ -69,6 +69,7 @@ from causal_experiments.utils.forest_plot_utils import (
     _wrap_xlabel,
     _normalize_metric_title,
     apply_xaxis_tick_locator,
+    _calculate_shared_xlim_from_dataframes,
     _validate_nnaa_metric,
     _first_valid_value_with_source,
     _first_valid_value,
@@ -2678,6 +2679,13 @@ def plot_dag_cpdag_minimal_combined_forest(
 
         combined_legend_entries: Dict[int, Any] = {}
         tick_override = TICK_FONT_SIZE_COMBINED
+        shared_xlim_cmd: Tuple[float, float] | None = None
+        if metric == "correlation_matrix_difference":
+            dfs_for_shared = [df for df in [df_dag, df_minimal] if not df.empty]
+            if dfs_for_shared:
+                shared_xlim_cmd = _calculate_shared_xlim_from_dataframes(dfs_for_shared, step=0.1)
+                # Keep both panels on the same CMD scale, capped at 0.5 on the right.
+                shared_xlim_cmd = (min(shared_xlim_cmd[0], -0.1), 0.5)
 
         # Left panel: Vanilla vs DAG
         ax1 = axes[0]
@@ -2698,7 +2706,10 @@ def plot_dag_cpdag_minimal_combined_forest(
                 tick_font_size_override=tick_override,
             )
             combined_legend_entries.update(legend_entries_dag)
-            apply_xaxis_tick_locator(ax1, df=df_dag)
+            if shared_xlim_cmd is not None:
+                apply_xaxis_tick_locator(ax1, shared_xlim=shared_xlim_cmd)
+            else:
+                apply_xaxis_tick_locator(ax1, df=df_dag)
 
             n_datasets = len(datasets)
             shared_ylim = (0.5 * DATASET_SPACING, (n_datasets + 0.5) * DATASET_SPACING)
@@ -2768,7 +2779,10 @@ def plot_dag_cpdag_minimal_combined_forest(
                 tick_font_size_override=tick_override,
             )
             combined_legend_entries.update(legend_entries_minimal)
-            apply_xaxis_tick_locator(ax2, df=df_minimal)
+            if shared_xlim_cmd is not None:
+                apply_xaxis_tick_locator(ax2, shared_xlim=shared_xlim_cmd)
+            else:
+                apply_xaxis_tick_locator(ax2, df=df_minimal)
 
             n_datasets = len(datasets)
             shared_ylim = (0.5 * DATASET_SPACING, (n_datasets + 0.5) * DATASET_SPACING)
