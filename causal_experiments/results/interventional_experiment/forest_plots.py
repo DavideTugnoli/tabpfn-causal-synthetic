@@ -923,7 +923,6 @@ def plot_forest(
             if handles:
                 if is_custom_noise_case and len(handles) > 5:
                     # Keep one-row legend like other plots, but compact spacing to avoid clipping.
-                    labels = [label.replace("Train ", "Train") for label in labels]
                     if is_simglucose_plot:
                         legend_y_anchor = -0.46
                     else:
