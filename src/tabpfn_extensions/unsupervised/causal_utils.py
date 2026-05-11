@@ -37,8 +37,8 @@ def parse_cpdag_adjacency_matrix(
     
     for i in range(n):
         # Find causal parents (directed edges pointing to this node)
-        # Look at [j, i] to find who points to i
-        parents = [j for j in range(n) if cpdag_adj[j, i] == 1]
+        # Look at [i, j] to find parents j with directed edges j -> i.
+        parents = [j for j in range(n) if cpdag_adj[i, j] == 1]
         
         # Find undirected neighbors (undirected edges)
         undirected = []
