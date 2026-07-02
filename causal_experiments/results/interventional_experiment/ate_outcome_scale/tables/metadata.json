@@ -1,0 +1,33 @@
+{
+  "generated_at_utc": "2026-04-24T20:40:44+00:00",
+  "script": "causal_experiments/results/interventional_experiment/ate_outcome_scale/scripts/build_ate_scale_reference.py",
+  "input_dir": "causal_experiments/results/interventional_experiment/data",
+  "input_files": [
+    "causal_experiments/results/interventional_experiment/data/result_csuite_large_backdoor_intervention_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_csuite_mixed_confounding_intervention_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_csuite_mixed_simpson_intervention_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_csuite_nonlin_simpson_intervention_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_csuite_symprod_simpson_intervention_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_csuite_weak_arrows_intervention_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_custom_scm_interventional_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_custom_scm_noise1e-2_interventional_experiment_cleaned_reps_100.csv",
+    "causal_experiments/results/interventional_experiment/data/result_simglucose_interventional_experiment_cleaned_reps_100.csv"
+  ],
+  "output_dir": "causal_experiments/results/interventional_experiment/ate_outcome_scale",
+  "included_train_sizes": [
+    20,
+    50,
+    100,
+    200,
+    500,
+    1000
+  ],
+  "main_table_note": "All available train sizes are included; noise robustness rows are kept in the full CSV.",
+  "n_bootstraps": 10000,
+  "baseline_condition": "vanilla_original",
+  "primary_comparator_rule": {
+    "custom_scm_and_csuite": "dag_topological",
+    "simglucose": "vanilla_topological"
+  },
+  "simglucose_units_note": "subcut_glucose is the CGM-like subcutaneous glucose outcome in mg/dL; intervention action_insulin_U_per_min is U/min."
+}

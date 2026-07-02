@@ -55,6 +55,18 @@ PATIENT_PARAM_NAMES: List[str] = [
 ]
 
 
+def _load_quest_tables(data_dir: Path) -> pd.DataFrame:
+    frames = []
+    for path in (data_dir / "sampled_insilico_quest.csv", data_dir / "insilico_quest.csv"):
+        if path.exists():
+            frames.append(pd.read_csv(path))
+    if not frames:
+        raise FileNotFoundError(f"No Quest controller tables found under {data_dir}")
+    df = pd.concat(frames, axis=0, ignore_index=True)
+    df = df.drop_duplicates(subset="Name", keep="first")
+    return df.set_index("Name")
+
+
 def _safe_float(x: Optional[float]) -> float:
     """Return a finite float value, defaulting to 0.0 for invalid inputs."""
     try:
@@ -86,7 +98,8 @@ def generate_interventional_csv(
     n_samples: int,
     intervention_var: str,
     intervention_val: float,
-    shared_draws: List[Tuple[str, int, int]]
+    shared_draws: List[Tuple[str, int, int]],
+    quest_df: pd.DataFrame,
 ):
     """Generate a dataset by forcing an intervention, using a pre-sampled list of scenarios.
     
@@ -146,10 +159,19 @@ def generate_interventional_csv(
 
         rec["action_CHO_g"] = float(cho_value)
         rec["action_insulin_U_per_min"] = float(insulin_rate)
-        
-        # Controller parameters (set to NaN for interventional data - not computed)
-        rec["CR"] = np.nan
-        rec["CF"] = np.nan
+
+        default_cr = 12.0
+        default_cf = 40.0
+        try:
+            quest_row = quest_df.loc[str(pname)]
+            carb_ratio = _safe_float(quest_row.get("CR"))
+            correction_factor = _safe_float(quest_row.get("CF"))
+        except KeyError:
+            carb_ratio = default_cr
+            correction_factor = default_cf
+
+        rec["CR"] = carb_ratio if carb_ratio > 0 else default_cr
+        rec["CF"] = correction_factor if correction_factor > 0 else default_cf
 
         rows.append(rec)
 
@@ -271,6 +293,7 @@ def main():
     patient_module.PATIENT_PARA_FILE_TEST = str(PATIENT_PARA_FILE_TEST)
     params_sampled = pd.read_csv(PATIENT_PARA_FILE_SAMPLED)
     params_test = pd.read_csv(PATIENT_PARA_FILE_TEST)
+    quest_df = _load_quest_tables(DATA_DIR)
     patient_names = params_sampled['Name'].tolist() + params_test['Name'].tolist()
 
     shared_draws: List[Tuple[str, int, int]] = []
@@ -283,11 +306,11 @@ def main():
     
     # --- Generate dataset for the first world (T=t0) using shared scenarios ---
     out_csv_t0 = out_dir / f'data_{args.treatment}_eq_{args.t0}.csv'
-    generate_interventional_csv(out_csv_t0, args.n_samples, args.treatment, args.t0, shared_draws=shared_draws)
+    generate_interventional_csv(out_csv_t0, args.n_samples, args.treatment, args.t0, shared_draws=shared_draws, quest_df=quest_df)
     
     # --- Generate dataset for the second world (T=t1) using THE SAME scenarios ---
     out_csv_t1 = out_dir / f'data_{args.treatment}_eq_{args.t1}.csv'
-    generate_interventional_csv(out_csv_t1, args.n_samples, args.treatment, args.t1, shared_draws=shared_draws)
+    generate_interventional_csv(out_csv_t1, args.n_samples, args.treatment, args.t1, shared_draws=shared_draws, quest_df=quest_df)
 
     print("\n[COMPLETED] Generation of the two PAIRED interventional datasets finished.")
 

@@ -104,6 +104,101 @@ def _choose_indep_test(dataset_name: str, categorical_cols: list[str]) -> str:
     return "kci"
 
 
+def discover_cpdag_excluding_columns(
+    X_train: np.ndarray,
+    column_names: list[str],
+    categorical_cols: list[str],
+    use_categorical: bool,
+    true_dag: dict[int, list[int]] | None,
+    alpha: float,
+    indep_test: str,
+    excluded_columns: list[str],
+    hybrid_params: dict[str, Any] | None = None,
+) -> dict[int, dict[str, list[int]]]:
+    """Run discovery on observed columns and expand the CPDAG back to full width."""
+    excluded_set = set(excluded_columns)
+    included_indices = [i for i, name in enumerate(column_names) if name not in excluded_set]
+    excluded_found = [name for name in column_names if name in excluded_set]
+
+    if not excluded_found:
+        return discover_cpdag_from_data(
+            X_train,
+            column_names,
+            categorical_cols,
+            use_categorical,
+            true_dag=true_dag,
+            alpha=alpha,
+            indep_test=indep_test,
+            hybrid_params=hybrid_params,
+        )
+
+    if not included_indices:
+        raise ValueError("All columns were excluded from CPDAG discovery")
+
+    X_subset = X_train[:, included_indices]
+    if not np.isfinite(X_subset).all():
+        bad_indices = [
+            column_names[included_indices[j]]
+            for j in range(X_subset.shape[1])
+            if not np.isfinite(X_subset[:, j]).all()
+        ]
+        raise ValueError(
+            "Non-finite values remain after discovery column exclusion: "
+            + ", ".join(bad_indices)
+        )
+
+    old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(included_indices)}
+    new_to_old = {new_idx: old_idx for old_idx, new_idx in old_to_new.items()}
+    subset_columns = [column_names[i] for i in included_indices]
+    subset_categorical = [name for name in categorical_cols if name in subset_columns]
+    subset_true_dag = None
+    if true_dag is not None:
+        subset_true_dag = {
+            old_to_new[child]: [
+                old_to_new[parent]
+                for parent in parents
+                if parent in old_to_new
+            ]
+            for child, parents in true_dag.items()
+            if child in old_to_new
+        }
+
+    print(
+        "  → Excluding columns from CPDAG discovery only: "
+        + ", ".join(excluded_found)
+    )
+    cpdag_subset = discover_cpdag_from_data(
+        X_subset,
+        subset_columns,
+        subset_categorical,
+        bool(subset_categorical) if use_categorical else False,
+        true_dag=subset_true_dag,
+        alpha=alpha,
+        indep_test=indep_test,
+        hybrid_params=hybrid_params,
+    )
+
+    cpdag_full: dict[int, dict[str, list[int]]] = {
+        idx: {"parents": [], "undirected": []}
+        for idx in range(len(column_names))
+    }
+    for new_idx, links in cpdag_subset.items():
+        old_idx = new_to_old[int(new_idx)]
+        cpdag_full[old_idx] = {
+            "parents": [
+                new_to_old[int(parent)]
+                for parent in links.get("parents", [])
+                if int(parent) in new_to_old
+            ],
+            "undirected": [
+                new_to_old[int(neighbor)]
+                for neighbor in links.get("undirected", [])
+                if int(neighbor) in new_to_old
+            ],
+        }
+    return cpdag_full
+
+
 def apply_do_surgery_to_dag(
     dag: dict[int, list[int]],
     intervention_nodes: list[int],
@@ -220,20 +315,25 @@ def load_simglucose_intervention_data(dataset_name: str) -> dict:
     if not interventional_files:
         raise FileNotFoundError(f"No interventional CSV files found in {interventional_dir}")
     
-    # Find action_CHO_g files (exactly 2 required)
-    cho_files = [f for f in interventional_files if "action_CHO_g" in f.name]
+    # Default to action_CHO_g for backward compatibility. Isolated variants can
+    # select a different intervention via SIMGLUCOSE_INTERVENTION_VARIABLE.
+    preferred_intervention_var = os.environ.get(
+        "SIMGLUCOSE_INTERVENTION_VARIABLE",
+        "action_CHO_g",
+    )
+    action_files = [f for f in interventional_files if preferred_intervention_var in f.name]
     
-    if cho_files and len(cho_files) == 2:
-        action_files = cho_files
-        intervention_var = "action_CHO_g"
-        print(" Using action_CHO_g intervention")
+    if action_files and len(action_files) == 2:
+        intervention_var = preferred_intervention_var
+        print(f" Using {intervention_var} intervention")
     else:
         available_files = [f.name for f in interventional_files]
         raise FileNotFoundError(
             f"Required interventional CSV files not found in {interventional_dir}.\n"
-            f"Expected: 2 files for 'action_CHO_g'\n"
+            f"Expected: 2 files for '{preferred_intervention_var}'\n"
             f"Available files: {available_files}\n"
-            f"Example: data_action_CHO_g_eq_30.csv and data_action_CHO_g_eq_90.csv"
+            f"Example: data_{preferred_intervention_var}_eq_<t0>.csv and "
+            f"data_{preferred_intervention_var}_eq_<t1>.csv"
         )
     
     # Extract t0 and t1 values from filenames
@@ -1010,6 +1110,8 @@ def main(
     train_sizes_group: str | None = None,  # Deprecated, use train_sizes instead
     skip_seeds: list[int] | None = None,
     seed_start: int = 0,
+    discovery_exclude_columns: list[str] | None = None,
+    prepare_datasets_only: bool = False,
 ):
     """Main experimental pipeline.
     
@@ -1026,6 +1128,8 @@ def main(
         train_sizes: Custom list of train sizes to use. If None, uses defaults based on test_mode.
         train_sizes_group: [DEPRECATED] Use train_sizes instead. Optionally restrict to small/large groups.
         seed_start: Global offset added to the linear seed schedule.
+        discovery_exclude_columns: Column names to exclude only from CPDAG discovery.
+        prepare_datasets_only: If True, create/load cached datasets and return before experiments.
     """
     print("🧪 SimGlucose Interventional Experiment for TabPFN")
     print("=" * 60)
@@ -1398,6 +1502,10 @@ def main(
     if splits_regenerated:
         print(f"    Regenerated fresh splits for {splits_regenerated} seed/train-size combos")
 
+    if prepare_datasets_only:
+        print(" Prepared datasets only; exiting before model generation.")
+        return
+
     # ======================
     # EXPERIMENTAL CONFIGURATIONS  
     # ======================
@@ -1679,20 +1787,34 @@ def main(
                         if algorithm.startswith("cpdag_"):
                             if "discovered" in algorithm:
                                 print(f"  → Discovering CPDAG for seed={seed}, train_size={train_size}")
-                                cpdag_to_use = discover_cpdag_from_data(
-                                    X_train_original,
-                                    column_names,
-                                    categorical_cols,
-                                    USE_CATEGORICAL,
-                                    true_dag=dag,
-                                    alpha=alpha,
-                                    indep_test=cpdag_indep_test,
-                                    hybrid_params={
-                                        "k": 5,
-                                        "permutations": 500,
-                                        "random_state": seed,
-                                    } if cpdag_indep_test == "hybrid" else None,
-                                )
+                                hybrid_params = {
+                                    "k": 5,
+                                    "permutations": 500,
+                                    "random_state": seed,
+                                } if cpdag_indep_test == "hybrid" else None
+                                if discovery_exclude_columns:
+                                    cpdag_to_use = discover_cpdag_excluding_columns(
+                                        X_train_original,
+                                        column_names,
+                                        categorical_cols,
+                                        USE_CATEGORICAL,
+                                        true_dag=dag,
+                                        alpha=alpha,
+                                        indep_test=cpdag_indep_test,
+                                        excluded_columns=discovery_exclude_columns,
+                                        hybrid_params=hybrid_params,
+                                    )
+                                else:
+                                    cpdag_to_use = discover_cpdag_from_data(
+                                        X_train_original,
+                                        column_names,
+                                        categorical_cols,
+                                        USE_CATEGORICAL,
+                                        true_dag=dag,
+                                        alpha=alpha,
+                                        indep_test=cpdag_indep_test,
+                                        hybrid_params=hybrid_params,
+                                    )
                             elif "minimal" in algorithm:
                                 cpdag_to_use = cpdag
                             else:
@@ -2101,6 +2223,17 @@ if __name__ == "__main__":
         "--train-sizes-group", choices=["small", "large", "all"], default=None,
         help="[DEPRECATED] Optionally restrict train sizes: small=[20,50,100], large=[200,500,1000]. Use --train-sizes instead."
     )
+    parser.add_argument(
+        "--discovery-exclude-columns",
+        type=str,
+        default="",
+        help="Comma-separated column names to exclude from CPDAG discovery only.",
+    )
+    parser.add_argument(
+        "--prepare-datasets-only",
+        action="store_true",
+        help="Prepare cached datasets and exit before running any model generation.",
+    )
     args = parser.parse_args()
 
     # Set up environment for reproducibility
@@ -2118,6 +2251,11 @@ if __name__ == "__main__":
         for seed_str in skip_seeds_arg
         if seed_str.strip()
     }
+    discovery_exclude_columns = [
+        name.strip()
+        for name in args.discovery_exclude_columns.split(",")
+        if name.strip()
+    ]
     
     # Run the experiment
     main(
@@ -2134,4 +2272,6 @@ if __name__ == "__main__":
         train_sizes_group=args.train_sizes_group,
         skip_seeds=list(skip_seeds_set) if skip_seeds_set else None,
         seed_start=args.seed_start,
+        discovery_exclude_columns=discovery_exclude_columns or None,
+        prepare_datasets_only=args.prepare_datasets_only,
     )

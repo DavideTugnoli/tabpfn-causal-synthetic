@@ -67,6 +67,7 @@ from causal_experiments.utils.forest_plot_utils import (
     _first_valid_value_with_source,
     apply_xaxis_tick_locator,
     _calculate_shared_xlim_from_dataframes,
+    _dataframes_xranges_overlap,
     _first_valid_value,
     _normalize_effect,
     _orient_scalar,
@@ -221,8 +222,8 @@ COMPARISON_SPECS: Dict[str, ComparisonSpec] = {
         baseline="vanilla_original",
         comparator="cpdag_minimal_original",
         baseline_label="Vanilla Original",
-        comparator_label="Minimal CPDAG",
-        title="Vanilla Original vs Minimal CPDAG",
+        comparator_label="oracle-PDAG",
+        title="Vanilla Original vs oracle-PDAG",
         group_slug="ordering_original",
         group_label="Original ordering",
     ),
@@ -632,6 +633,14 @@ SINGLE_FIGSIZE = (11.0, 7.0)
 SIMGLUCOSE_FIGSIZE = (11.0, 4.25)  # Reduced height for single-dataset simglucose plots (adjusted to 4.25" as requested)
 COMBINED_FIGSIZE_DUO = (18.0, 6.5)  # Reduced height for better LaTeX fit
 
+# Column-friendly variant used only when single_column=True (mirrors the
+# comparison_experiment script so single plots match across experiments).
+SINGLE_FIGSIZE_COLUMN = (6.8, 6.6)
+TICK_FONT_SIZE_COLUMN = 16
+LABEL_FONT_SIZE_COLUMN = 18
+TITLE_FONT_SIZE_COLUMN = 20
+LEGEND_FONT_SIZE_COLUMN = 15
+
 # Simglucose specific margins to maintain text spacing with reduced height
 # Calculated to preserve exactly 1.40" bottom and 0.70" top space
 # Bottom: 4.25 * 0.33 = 1.40" (matches 7.0 * 0.20)
@@ -713,6 +722,7 @@ def plot_forest(
     comparison: ComparisonSpec,
     show_caption: bool = False,
     no_csv: bool = False,
+    single_column: bool = False,
 ) -> None:
     """Render and save the forest plot for a specific metric."""
     if not rows:
@@ -770,6 +780,15 @@ def plot_forest(
     offsets = _build_offsets(train_sizes)
     marker_lookup = _build_marker_map(train_sizes)
 
+    # Font sizes: column-friendly variant when single_column (mirrors comparison script).
+    tick_fs = TICK_FONT_SIZE_COLUMN if single_column else TICK_FONT_SIZE_SINGLE
+    label_fs = LABEL_FONT_SIZE_COLUMN if single_column else LABEL_FONT_SIZE
+    title_fs = TITLE_FONT_SIZE_COLUMN if single_column else TITLE_FONT_SIZE
+    legend_fs = LEGEND_FONT_SIZE_COLUMN if single_column else LEGEND_FONT_SIZE
+    if single_column:
+        # Increase vertical separation between train-size markers in compact plots.
+        offsets = {ts: float(val * 1.25) for ts, val in offsets.items()}
+
     # Create plots for each group
     for plot_idx, plot_datasets in enumerate(datasets_to_plot):
         if not plot_datasets:
@@ -779,14 +798,23 @@ def plot_forest(
         
         # Fixed size for all single plots to keep dimensions consistent
         # Use reduced height for valid simglucose plots to avoid excessive whitespace
-        if is_simglucose_plot:
+        if single_column:
+            if len(train_sizes) > 5:
+                # Taller canvas so the two-row legend gets its own space and the
+                # panel keeps the same height as the 5-train-size single plots.
+                width, height = (SINGLE_FIGSIZE_COLUMN[0], 6.95)
+            else:
+                width, height = SINGLE_FIGSIZE_COLUMN
+        elif is_simglucose_plot:
             width, height = SIMGLUCOSE_FIGSIZE
         else:
             width, height = SINGLE_FIGSIZE
 
         comparison_slug = comparison.output_slug
-        # Save directly to paper folder
+        # Save directly to paper folder (single_column uses separate subfolder)
         paper_dir = PAPER_ROOT / folder_name
+        if single_column:
+            paper_dir = paper_dir / "single_column"
         _ensure_dir(paper_dir)
         if no_csv:
             pdf_dir = paper_dir
@@ -809,16 +837,20 @@ def plot_forest(
             X_LABEL_PAD + Y_LABEL_EXTRA_PAD,
             combined=False,
         )
+        if single_column:
+            # Keep dataset labels closer to y-axis in compact layout.
+            tick_offset = -46.0
+            ylabel_pad = max(44.0, ylabel_pad)
 
         def _callback(plt_mod: Any) -> None:
             setup_forest_plot_style()
             # Force font sizes via rcParams to override fastplot defaults
-            plt_mod.rcParams['font.size'] = LABEL_FONT_SIZE
-            plt_mod.rcParams['axes.labelsize'] = LABEL_FONT_SIZE
-            plt_mod.rcParams['axes.titlesize'] = TITLE_FONT_SIZE
-            plt_mod.rcParams['xtick.labelsize'] = TICK_FONT_SIZE_SINGLE
-            plt_mod.rcParams['ytick.labelsize'] = TICK_FONT_SIZE_SINGLE
-            plt_mod.rcParams['legend.fontsize'] = LEGEND_FONT_SIZE
+            plt_mod.rcParams['font.size'] = label_fs
+            plt_mod.rcParams['axes.labelsize'] = label_fs
+            plt_mod.rcParams['axes.titlesize'] = title_fs
+            plt_mod.rcParams['xtick.labelsize'] = tick_fs
+            plt_mod.rcParams['ytick.labelsize'] = tick_fs
+            plt_mod.rcParams['legend.fontsize'] = legend_fs
             plt_mod.rcParams['legend.title_fontsize'] = LEGEND_TITLE_FONT_SIZE
 
             fig = plt_mod.gcf()
@@ -875,19 +907,19 @@ def plot_forest(
                 ax,
                 y_positions,
                 labels,
-                font_size=TICK_FONT_SIZE_SINGLE,
+                font_size=tick_fs,
                 x_offset_points=tick_offset,
             )
             # Set tick parameters with explicit direction="out" for consistency
-            ax.tick_params(axis="y", labelsize=TICK_FONT_SIZE_SINGLE, direction="out")
+            ax.tick_params(axis="y", labelsize=tick_fs, direction="out")
             # Use reduced padding for x-axis to match Y label distance
-            ax.tick_params(axis="x", labelsize=TICK_FONT_SIZE_SINGLE, pad=TICK_PAD_X_SINGLE, direction="out")
+            ax.tick_params(axis="x", labelsize=tick_fs, pad=TICK_PAD_X_SINGLE, direction="out")
             # Force ticks outward for consistency (standard matplotlib behavior) - final override
             ax.tick_params(axis="both", which="both", direction="out")
             
             ax.set_ylabel(
                 "Dataset",
-                fontsize=LABEL_FONT_SIZE,
+                fontsize=label_fs,
                 labelpad=ylabel_pad,
             )
 
@@ -896,32 +928,52 @@ def plot_forest(
             else:
                 xlabel = f"Hodges–Lehmann diff ({comparison.comparator_label} − {comparison.baseline_label})"
 
-            ax.set_xlabel(xlabel, fontsize=LABEL_FONT_SIZE, labelpad=X_LABEL_PAD)
+            ax.set_xlabel(xlabel, fontsize=label_fs, labelpad=X_LABEL_PAD)
+            if single_column:
+                # Keep the long x-label fully visible when the panel center is shifted right by margins.
+                ax.xaxis.set_label_coords(0.43, -0.14)
             # Escape LaTeX special characters (especially % which is a comment character)
             escaped_metric_title = metric_title.replace('%', r'\%')
-            ax.set_title(f"{comparison.title} · {escaped_metric_title}", fontsize=TITLE_FONT_SIZE, pad=AXES_TITLE_PAD)
+            if single_column:
+                title_text = f"{comparison.baseline_label} vs {comparison.comparator_label}\n{escaped_metric_title}"
+            else:
+                title_text = f"{comparison.title}\n{escaped_metric_title}"
+            ax.set_title(title_text, fontsize=title_fs, pad=AXES_TITLE_PAD)
 
             handles = [legend_entries[ts] for ts in train_sizes if ts in legend_entries]
             labels = [handle.get_label() for handle in handles]
             is_custom_noise_case = _needs_extra_left(plot_labels)
-            legend_fontsize = LEGEND_FONT_SIZE
+            legend_fontsize = legend_fs
             legend_title_fontsize = LEGEND_TITLE_FONT_SIZE
             legend_columnspacing = LEGEND_COLUMNSPACING_SINGLE
             legend_handletextpad = LEGEND_HANDLETEXTPAD
+            legend_ncol = len(handles)
 
             # Legend below x-axis label, using axes coordinates for reliable positioning
             # Adjust anchor for simglucose plots to maintain physical distance from axis
-            # Standard offset -0.15 corresponds to ~0.74" below a 4.9" high axis
-            # For simglucose (4.25" height): Axis height ~2.15". 
-            # To maintain ~0.75" physical distance: -0.75 / 2.15 = -0.35
-            # User requested slightly more distance to match other plots: -0.42
             if is_simglucose_plot:
                 legend_y_anchor = -0.42
             else:
                 legend_y_anchor = -0.15
+            single_bottom_margin = SINGLE_BOTTOM_MARGIN
+            simglucose_bottom_margin = SIMGLUCOSE_BOTTOM_MARGIN
+            if single_column:
+                # Column-friendly layout (mirrors comparison_experiment single_column).
+                legend_y_anchor = -0.21
+                single_bottom_margin = max(SINGLE_BOTTOM_MARGIN, 0.31)
+                legend_columnspacing = 0.35
+                legend_handletextpad = 0.15
+                legend_title_fontsize = max(14, legend_fs - 1)
+                if len(handles) > 5:
+                    # Two rows so all train sizes fit the narrow column (ATE has 6).
+                    # Canvas is made taller above (figsize) so this bottom margin
+                    # leaves the panel as tall as the 5-train-size single plots.
+                    legend_ncol = (len(handles) + 1) // 2
+                    single_bottom_margin = max(SINGLE_BOTTOM_MARGIN, 0.345)
+                    legend_columnspacing = 0.5
 
             if handles:
-                if is_custom_noise_case and len(handles) > 5:
+                if is_custom_noise_case and len(handles) > 5 and not single_column:
                     # Keep one-row legend like other plots, but compact spacing to avoid clipping.
                     if is_simglucose_plot:
                         legend_y_anchor = -0.46
@@ -931,12 +983,26 @@ def plot_forest(
                     legend_title_fontsize = max(LEGEND_TITLE_FONT_SIZE - 2, 12)
                     legend_columnspacing = 0.8
                     legend_handletextpad = 0.5
+
+                legend_bbox = (0.5, legend_y_anchor)
+                legend_transform = ax.transAxes
+                legend_loc = "upper center"
+                if single_column:
+                    # Center legend under the plot panel (not full-figure center) to
+                    # keep alignment with title/xlabel when left margin is larger.
+                    left_margin_preview = max(0.23, SINGLE_LEFT_MARGIN)
+                    right_margin_preview = 0.99
+                    legend_center_x = ((left_margin_preview + right_margin_preview) / 2.0) - 0.08
+                    legend_bbox = (legend_center_x, 0.052)
+                    legend_transform = fig.transFigure
+                    legend_loc = "lower center"
                 ax.legend(
                     handles,
                     labels,
-                    loc="upper center",
-                    bbox_to_anchor=(0.5, legend_y_anchor),  # Below subplot in axes coords
-                    ncol=len(handles),
+                    loc=legend_loc,
+                    bbox_to_anchor=legend_bbox,
+                    bbox_transform=legend_transform,
+                    ncol=legend_ncol,
                     frameon=False,
                     fontsize=legend_fontsize,
                     title="Train Size",
@@ -945,30 +1011,33 @@ def plot_forest(
                     handletextpad=legend_handletextpad,
                 )
 
-            single_bottom_margin = SINGLE_BOTTOM_MARGIN
-            simglucose_bottom_margin = SIMGLUCOSE_BOTTOM_MARGIN
-            if is_custom_noise_case and len(handles) > 5:
+            if is_custom_noise_case and len(handles) > 5 and not single_column:
                 single_bottom_margin = max(SINGLE_BOTTOM_MARGIN, 0.24)
                 simglucose_bottom_margin = max(SIMGLUCOSE_BOTTOM_MARGIN, 0.37)
 
             # FIXED margins for ALL single plots - ensures uniform dimensions
             # Increase left margin slightly for noise=1e-2 plots to prevent label overlap
             left_margin = SINGLE_LEFT_MARGIN
+            if single_column:
+                left_margin = max(0.23, SINGLE_LEFT_MARGIN)
             if is_custom_noise_case:
                 left_margin = max(SINGLE_LEFT_MARGIN, 0.22)  # Increase from default (~0.15) to 0.22 for noise=1e-2
-            
+            right_margin = SINGLE_RIGHT_MARGIN
+            if single_column:
+                right_margin = 0.99
+
             # Adjust margins for simglucose plots to preserve physical spacing with reduced height
-            if is_simglucose_plot:
+            if is_simglucose_plot and not single_column:
                 fig.subplots_adjust(
                     left=left_margin,
-                    right=SINGLE_RIGHT_MARGIN,
+                    right=right_margin,
                     bottom=simglucose_bottom_margin,
                     top=SIMGLUCOSE_TOP_MARGIN,
                 )
             else:
                 fig.subplots_adjust(
                     left=left_margin,
-                    right=SINGLE_RIGHT_MARGIN,
+                    right=right_margin,
                     bottom=single_bottom_margin,
                     top=SINGLE_TOP_MARGIN,
                 )
@@ -976,17 +1045,17 @@ def plot_forest(
             # Disable tight_layout to preserve fixed margins
             original_tight_layout = plt_mod.tight_layout
             def _no_tight_layout(*args: Any, **kwargs: Any) -> None:
-                if is_simglucose_plot:
+                if is_simglucose_plot and not single_column:
                     fig.subplots_adjust(
                         left=left_margin,
-                        right=SINGLE_RIGHT_MARGIN,
+                        right=right_margin,
                         bottom=simglucose_bottom_margin,
                         top=SIMGLUCOSE_TOP_MARGIN,
                     )
                 else:
                     fig.subplots_adjust(
                         left=left_margin,
-                        right=SINGLE_RIGHT_MARGIN,
+                        right=right_margin,
                         bottom=single_bottom_margin,
                         top=SINGLE_TOP_MARGIN,
                     )
@@ -1056,7 +1125,7 @@ def plot_cpdag_combined_forest(
     show_caption: bool = False,
     no_csv: bool = False,
 ) -> None:
-    """Generate a combined forest plot showing Vanilla vs Minimal CPDAG and Vanilla vs Discovered CPDAG."""
+    """Generate a combined forest plot showing Vanilla vs oracle-PDAG and Vanilla vs Discovered CPDAG."""
     if metric not in METRIC_CONFIG:
         print(f"[WARN] Unknown metric '{metric}' for CPDAG combined forest plot.")
         return
@@ -1184,7 +1253,7 @@ def plot_cpdag_combined_forest(
 
         combined_legend_entries: Dict[int, Line2D] = {}
 
-        # Subplot 1: Vanilla vs Minimal CPDAG
+        # Subplot 1: Vanilla vs oracle-PDAG
         ax1 = axes[0]
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
@@ -1460,9 +1529,9 @@ def plot_dag_cpdag_minimal_combined_forest(
     show_caption: bool = False,
     no_csv: bool = False,
 ) -> None:
-    """Generate a combined forest plot showing Vanilla vs DAG (left) and Vanilla vs Minimal CPDAG (right)."""
+    """Generate a combined forest plot showing Vanilla vs DAG (left) and Vanilla vs oracle-PDAG (right)."""
     if metric not in METRIC_CONFIG:
-        print(f"[WARN] Unknown metric '{metric}' for DAG+Minimal CPDAG combined forest plot.")
+        print(f"[WARN] Unknown metric '{metric}' for DAG+oracle-PDAG combined forest plot.")
         return
 
     # Get data for the two comparisons
@@ -1470,7 +1539,7 @@ def plot_dag_cpdag_minimal_combined_forest(
     vanilla_vs_minimal = _collect_forest_rows(metric, COMPARISON_SPECS["original_cpdag_minimal_vs_vanilla"])
 
     if not vanilla_vs_dag and not vanilla_vs_minimal:
-        print("[INFO] No data available for DAG+Minimal CPDAG combined plot.")
+        print("[INFO] No data available for DAG+oracle-PDAG combined plot.")
         return
 
     # Build dataframes
@@ -1499,7 +1568,7 @@ def plot_dag_cpdag_minimal_combined_forest(
 
     datasets = sorted(all_datasets)
     if not datasets:
-        print("[INFO] No datasets available for DAG+Minimal CPDAG combined plot.")
+        print("[INFO] No datasets available for DAG+oracle-PDAG combined plot.")
         return
 
     # Build dataset labels
@@ -1529,7 +1598,7 @@ def plot_dag_cpdag_minimal_combined_forest(
         if not pd.isna(ts)
     })
     if not train_sizes:
-        print("[INFO] No train sizes detected for DAG+Minimal CPDAG combined plot.")
+        print("[INFO] No train sizes detected for DAG+oracle-PDAG combined plot.")
         return
 
     offsets = _build_offsets(train_sizes)
@@ -1639,7 +1708,7 @@ def plot_dag_cpdag_minimal_combined_forest(
                 )[1],
             )
 
-        # Subplot 2: Vanilla vs Minimal CPDAG
+        # Subplot 2: Vanilla vs oracle-PDAG
         ax2 = axes[1]
         ax2.spines['top'].set_visible(False)
         ax2.spines['right'].set_visible(False)
@@ -1881,7 +1950,7 @@ def plot_dag_cpdag_minimal_combined_forest(
             combined_df.to_csv(csv_path, index=False)
 
     print(
-        f"[SUCCESS] Saved DAG+Minimal CPDAG combined forest plot for metric "
+        f"[SUCCESS] Saved DAG+oracle-PDAG combined forest plot for metric "
         f"{metric} in {pdf_path}"
     )
 
@@ -3145,7 +3214,7 @@ def main(
         for metric in metric_names:
             plot_cpdag_combined_forest(metric, show_caption=show_caption, no_csv=no_csv)
 
-    # Generate DAG+Minimal CPDAG combined plots if both comparisons are requested
+    # Generate DAG+oracle-PDAG combined plots if both comparisons are requested
     if ("cross_dag_topological_vs_vanilla_original" in comparison_keys and
         "original_cpdag_minimal_vs_vanilla" in comparison_keys):
         for metric in metric_names:

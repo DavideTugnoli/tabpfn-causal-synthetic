@@ -1,0 +1,3 @@
+group_id,dataset,algorithm,column_order,train_size,repetitions,seeds,reason
+0,csuite_mixed_confounding,cpdag_discovered,original,20,155,99,invalid_synthetic_after_v100_generation
+1,csuite_mixed_simpson,cpdag_discovered,original,50,125,220,missing_cached_split_in_previous_v100_run

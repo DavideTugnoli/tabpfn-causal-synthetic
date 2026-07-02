@@ -1,16 +1,16 @@
 train_size,median,ci_lower,ci_upper,n_seeds,dataset,metric,metric_title,dataset_label
-20,0.17675772683247115,0.14360914675683012,0.19468592354771996,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
-50,0.11730489859423314,0.09485904734129387,0.132805656828872,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
-100,0.08334710701175704,0.0693204369688254,0.09630354842492399,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
-200,0.05808205906540915,0.05319870951539861,0.07289914496642655,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
-500,0.06464866630159591,0.0576753380092688,0.07341614107915495,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
-20,0.0282916666666667,0.02519479166666664,0.03179166666666665,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
-50,0.02329166666666667,0.021333333333333343,0.027083333333333404,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
-100,0.020833333333333287,0.018208333333333396,0.025249999999999995,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
-200,0.016750000000000015,0.013245833333333346,0.01829166666666661,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
-500,0.013666666666666646,0.01149791666666667,0.015918749999999985,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
-20,0.02762500000000001,0.023249999999999993,0.029749999999999943,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
-50,0.019500000000000073,0.015996875000000015,0.021125000000000005,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
-100,0.017500000000000016,0.015125000000000055,0.018999999999999906,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
-200,0.015625000000000056,0.013000000000000012,0.01749999999999996,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
-500,0.013000000000000012,0.011500000000000066,0.015000000000000124,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
+20,0.17675772683247115,0.14143434056428617,0.19173493345817905,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
+50,0.11730489859423314,0.09547563789164842,0.13484618327204798,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
+100,0.08334710701175704,0.06836087339642771,0.0962524353215592,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
+200,0.05808205906540915,0.05438736062691826,0.07356009379693426,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
+500,0.06464866630159591,0.0576753380092688,0.0738395972317425,100,csuite_mixed_simpson,correlation_matrix_difference,Correlation Matrix Difference,csuite mixed simpson
+20,0.0282916666666667,0.024666666666666726,0.03192187500000003,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
+50,0.02329166666666667,0.021497916666666672,0.027250000000000052,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
+100,0.020833333333333287,0.018000000000000044,0.025249999999999995,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
+200,0.016750000000000015,0.013916666666666688,0.018083333333333396,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
+500,0.013666666666666646,0.0114166666666667,0.015833333333333297,100,csuite_mixed_simpson,k_marginal_tvd,k-Marginal Total Variation Distance,csuite mixed simpson
+20,0.02762500000000001,0.023249999999999993,0.029749999999999947,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
+50,0.019500000000000073,0.016365624999999974,0.02124999999999999,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
+100,0.017500000000000016,0.01499687499999996,0.019624999999999948,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
+200,0.015625000000000056,0.013000000000000012,0.017624999999999946,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson
+500,0.013000000000000012,0.011500000000000066,0.015000000000000013,100,csuite_mixed_simpson,nnaa,Nearest-Neighbor Adversarial Accuracy,csuite mixed simpson

@@ -1,0 +1,15 @@
+\begin{tabular}{lrlrrlrrc}
+\toprule
+Dataset & N & Units & Abs. ATE\_test & Vanilla median abs. ATE error & Comparator & Comparator median abs. ATE error & HL diff (vanilla - comparator) & Significant \\
+\midrule
+CSM & 20 & SCM outcome units & 4.98 & 1.23 & DAG-aware & 0.186 & 1.23 & Y \\
+CSM & 100 & SCM outcome units & 4.98 & 0.826 & DAG-aware & 0.163 & 0.649 & Y \\
+CSM & 500 & SCM outcome units & 4.98 & 0.274 & DAG-aware & 0.152 & 0.14 & Y \\
+CMC & 20 & native outcome units & 1.03 & 0.389 & DAG-aware & 0.479 & -0.063 & Y \\
+CMC & 100 & native outcome units & 1.03 & 0.129 & DAG-aware & 0.0873 & 0.0286 & Y \\
+CMC & 500 & native outcome units & 1.03 & 0.0894 & DAG-aware & 0.0453 & 0.0337 & Y \\
+SGL & 20 & mg/dL & 2.29 & 84.9 & Vanilla topological & 50.7 & 31.3 & Y \\
+SGL & 100 & mg/dL & 2.29 & 79.0 & Vanilla topological & 51.8 & 23.2 & Y \\
+SGL & 500 & mg/dL & 2.29 & 39.6 & Vanilla topological & 15.9 & 24.3 & Y \\
+\bottomrule
+\end{tabular}

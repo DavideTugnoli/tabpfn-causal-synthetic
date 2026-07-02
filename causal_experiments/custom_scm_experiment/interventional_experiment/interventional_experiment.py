@@ -714,10 +714,12 @@ def main(
 
     # INTERVENTIONAL EXPERIMENT PARAMETERS
     if test_mode:
+        ALL_TRAIN_SIZES_ORDERED = [50, 100]
         TRAIN_SIZES = [50, 100]  # Multiple training sizes for testing
         TEST_SIZE = 200   # Remaining samples from interventional data
         N_REPETITIONS = repetitions if repetitions is not None else 3
     else:
+        ALL_TRAIN_SIZES_ORDERED = [20, 50, 100, 200, 500, 1000]
         TRAIN_SIZES = [20, 50, 100, 200, 500, 1000]  # Multiple training sizes for full experiment
         TEST_SIZE = 2000   # Remaining samples from interventional data
         N_REPETITIONS = repetitions if repetitions is not None else 130
@@ -726,12 +728,16 @@ def main(
         raise ValueError("repetitions must be a positive integer")
 
     if train_sizes is not None:
-        TRAIN_SIZES = sorted(set(train_sizes))
-        if not TRAIN_SIZES:
+        requested_train_sizes = sorted(set(train_sizes))
+        if not requested_train_sizes:
             raise ValueError("train_sizes cannot be empty")
-        invalid_sizes = [ts for ts in TRAIN_SIZES if ts <= 0]
+        invalid_sizes = [ts for ts in requested_train_sizes if ts not in ALL_TRAIN_SIZES_ORDERED]
         if invalid_sizes:
-            raise ValueError(f"train_sizes must be positive integers, got: {invalid_sizes}")
+            raise ValueError(
+                f"Invalid train sizes {invalid_sizes}; expected subset of {ALL_TRAIN_SIZES_ORDERED}"
+            )
+        TRAIN_SIZES = sorted(requested_train_sizes, key=ALL_TRAIN_SIZES_ORDERED.index)
+        print(f"Custom train sizes requested: {TRAIN_SIZES}")
 
     # Optional: restrict to small/large train-size groups
     if train_sizes_group:
@@ -777,7 +783,7 @@ def main(
     
     # Function to get output directory and consolidated results file path
     def get_output_paths(train_size: int | None = None, algorithm_filter: str | None = None, column_order_filter: str | None = None) -> tuple[Path, Path]:
-        """Return output directory and consolidated CSV path (independent of train size)."""
+        """Return output directory and CSV path, optionally scoped to one train size."""
         out_dir = base_output_dir
         out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -790,7 +796,8 @@ def main(
             name_parts.append(column_order_filter)
 
         suffix = "_" + "_".join(name_parts) if name_parts else ""
-        output_file = out_dir / f"{base_name}{suffix}.csv"
+        train_size_suffix = f"_ts{train_size}" if train_size is not None and len(TRAIN_SIZES) == 1 else ""
+        output_file = out_dir / f"{base_name}{suffix}{train_size_suffix}.csv"
         return out_dir, output_file
 
 
@@ -1048,20 +1055,26 @@ def main(
     regenerated_datasets = 0
 
     print("Loading/generating interventional train sets...")
-    total_experiments_needed = len(TRAIN_SIZES) * N_REPETITIONS
-    max_seed = seed_start + total_experiments_needed - 1
+    train_size_to_seeds = {
+        train_size: [
+            seed_start + ALL_TRAIN_SIZES_ORDERED.index(train_size) * N_REPETITIONS + rep_idx
+            for rep_idx in range(N_REPETITIONS)
+        ]
+        for train_size in TRAIN_SIZES
+    }
+    total_experiments_needed = sum(len(seeds) for seeds in train_size_to_seeds.values())
+    min_seed = min(seed for seeds in train_size_to_seeds.values() for seed in seeds)
+    max_seed = max(seed for seeds in train_size_to_seeds.values() for seed in seeds)
     print(
         f"Will generate {total_experiments_needed} unique datasets using seeds "
-        f"{seed_start} to {max_seed}"
+        f"{min_seed} to {max_seed}"
     )
 
     datasets_dir = base_output_dir / "datasets"
     datasets_dir.mkdir(parents=True, exist_ok=True)
 
-    linear_seed = seed_start
     for train_size in TRAIN_SIZES:
-        for rep_idx in range(N_REPETITIONS):
-            seed = linear_seed
+        for rep_idx, seed in enumerate(train_size_to_seeds[train_size]):
             dataset_file = datasets_dir / f"train_ts{train_size}_s{seed}.npz"
             loaded_successfully = False
 
@@ -1130,10 +1143,8 @@ def main(
             else:
                 X_train = all_splits[seed]
 
-            linear_seed += 1
-
-            if (linear_seed - seed_start) % 20 == 0:
-                print(f"Processed {linear_seed - seed_start} train splits")
+            if (cached_datasets + regenerated_datasets) % 20 == 0:
+                print(f"Processed {cached_datasets + regenerated_datasets} train splits")
 
     if cached_datasets:
         print(f"    Cached datasets loaded for {cached_datasets} seeds")
@@ -1151,13 +1162,8 @@ def main(
             # Extract column order name from tuple (order_indices pre-calculated but not used)
             column_order, _ = column_order_tuple
 
-            # Linear seed counter approach - use same seed sequence for all algorithms
-            linear_seed = seed_start  # Reset per algorithm to ensure same seeds across algorithms
-
             for train_size in TRAIN_SIZES:
-                for rep_idx in range(N_REPETITIONS):
-                    seed = linear_seed  # 0, 1, 2, 3, 4, 5, ... (same for all algorithms!)
-                    linear_seed += 1  # Always move to the next dataset, even if we skip below
+                for rep_idx, seed in enumerate(train_size_to_seeds[train_size]):
                     repetition = rep_idx + 1  # 1-based repetition counter for this train_size
                     
                     # Skip if already completed
@@ -1433,7 +1439,8 @@ def main(
                         # Save intermediate results every N experiments
                         if len(results) % save_every == 0:
                             # Get consolidated output file and persist all accumulated rows
-                            _, current_output_file = get_output_paths(None, algorithm_filter, column_order_filter)
+                            current_train_size = TRAIN_SIZES[0] if len(TRAIN_SIZES) == 1 else None
+                            _, current_output_file = get_output_paths(current_train_size, algorithm_filter, column_order_filter)
                             save_results_to_csv(results, str(current_output_file))
                             
                             # Also save crashed seeds data if any exist
@@ -1494,7 +1501,8 @@ def main(
     total_time = time.time() - start_time
     print(f"\nExperiment completed in {total_time/60:.1f} minutes")
 
-    _, output_file = get_output_paths(None, algorithm_filter, column_order_filter)
+    final_train_size = TRAIN_SIZES[0] if len(TRAIN_SIZES) == 1 else None
+    _, output_file = get_output_paths(final_train_size, algorithm_filter, column_order_filter)
 
     if not results:
         print("  WARNING: No experiments produced results! Creating placeholder CSV.")

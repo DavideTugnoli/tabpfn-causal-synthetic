@@ -1,7 +1,7 @@
 # Graph Discovery Metrics
 
 This folder contains tooling and artifacts for graph discovery diagnostics used in
-comparison-experiment rebuttal analyses.
+comparison-experiment analyses.
 
 Scripts:
 - `scripts/compute_discovery_metrics.py` (PC/CPDAG discovery metrics)

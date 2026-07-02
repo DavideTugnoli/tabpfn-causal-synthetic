@@ -877,6 +877,7 @@ def main(
     dataset_name: str = "csuite_lingauss",
     column_order_filter: str | None = None,
     repetitions: int | None = None,
+    train_sizes: list[int] | None = None,
     train_sizes_group: str | None = None,
     skip_seeds: list[int] | None = None,
 ):
@@ -907,19 +908,30 @@ def main(
     # ======================
 
     if test_mode:
+        ALL_TRAIN_SIZES_ORDERED = [100, 500]
         TRAIN_SIZES = [100, 500]  # Reduced sizes for testing
         # Small default in test mode unless overridden
         N_REPETITIONS = repetitions if repetitions is not None else 3
     else:
+        ALL_TRAIN_SIZES_ORDERED = [20, 50, 100, 200, 500, 1000]
         TRAIN_SIZES = [20, 50, 100, 200, 500, 1000]  # All train sizes for causal effect experiments
         # Default repetitions for full runs (can be overridden)
         N_REPETITIONS = repetitions if repetitions is not None else 150
 
-    # Optional: restrict to small/large train-size groups (for walltime safety)
+    # Optional: restrict train sizes while preserving the seed schedule from the full run.
     group_small = [20, 50, 100]
     group_large = [200, 500, 1000]
     train_sizes_group = locals().get('train_sizes_group', None)
-    if train_sizes_group:
+    if train_sizes is not None:
+        requested_train_sizes = sorted(set(train_sizes))
+        invalid_sizes = [ts for ts in requested_train_sizes if ts not in ALL_TRAIN_SIZES_ORDERED]
+        if invalid_sizes:
+            raise ValueError(
+                f"Invalid train sizes {invalid_sizes}; expected subset of {ALL_TRAIN_SIZES_ORDERED}"
+            )
+        TRAIN_SIZES = sorted(requested_train_sizes, key=ALL_TRAIN_SIZES_ORDERED.index)
+        print(f" Custom train sizes requested: {TRAIN_SIZES}")
+    elif train_sizes_group:
         if train_sizes_group == 'small':
             TRAIN_SIZES = [ts for ts in TRAIN_SIZES if ts in group_small]
         elif train_sizes_group == 'large':
@@ -945,14 +957,15 @@ def main(
     skipped_values: list[int] = []
     next_seed = 0
 
-    for train_size in TRAIN_SIZES:
+    for schedule_train_size in ALL_TRAIN_SIZES_ORDERED:
         for rep_idx in range(N_REPETITIONS):
             while next_seed in skip_seeds_set:
                 skipped_values.append(next_seed)
                 next_seed += 1
             seed = next_seed
-            train_size_to_seeds[train_size].append(seed)
-            seed_to_metadata[seed] = (train_size, rep_idx + 1)
+            if schedule_train_size in train_size_to_seeds:
+                train_size_to_seeds[schedule_train_size].append(seed)
+                seed_to_metadata[seed] = (schedule_train_size, rep_idx + 1)
             next_seed += 1
 
     if skipped_values:
@@ -964,7 +977,7 @@ def main(
         if seeds:
             print(f"   train_size={ts}: {len(seeds)} seeds (range {seeds[0]}–{seeds[-1]})")
     
-    # Output configuration - consolidated CSV files (no per-train-size split)
+    # Output configuration. A single-train-size job writes a train-size-specific CSV.
     results_root = Path(
         os.environ.get(
             "CSUITE_INTERVENTIONAL_RESULTS_ROOT",
@@ -976,7 +989,7 @@ def main(
     
     # Function to get output directory and consolidated result file path
     def get_output_paths(train_size: int | None = None, algorithm_filter: str | None = None, column_order_filter: str | None = None) -> tuple[Path, Path]:
-        """Return output directory and consolidated CSV path independent of train size."""
+        """Return output directory and CSV path, optionally scoped to one train size."""
         out_dir = base_output_dir
         out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -988,7 +1001,8 @@ def main(
             name_parts.append(column_order_filter)
 
         suffix = "_" + "_".join(name_parts) if name_parts else ""
-        output_file = out_dir / f"{base_name}{suffix}.csv"
+        train_size_suffix = f"_ts{train_size}" if train_size is not None and len(TRAIN_SIZES) == 1 else ""
+        output_file = out_dir / f"{base_name}{suffix}{train_size_suffix}.csv"
         return out_dir, output_file
 
     # ======================
@@ -1704,7 +1718,8 @@ def main(
                         )
 
                         # Get consolidated output file for current configuration
-                        _, current_output_file = get_output_paths(None, algorithm_filter, column_order_filter)
+                        current_train_size = TRAIN_SIZES[0] if len(TRAIN_SIZES) == 1 else None
+                        _, current_output_file = get_output_paths(current_train_size, algorithm_filter, column_order_filter)
 
                         # Save training set to common datasets directory (Custom SCM model)
                         if save_datasets:
@@ -1829,7 +1844,8 @@ def main(
     total_time = time.time() - start_time
     print(f"\n🎉 Experiment completed in {total_time/60:.1f} minutes")
 
-    _, output_file = get_output_paths(None, algorithm_filter, column_order_filter)
+    final_train_size = TRAIN_SIZES[0] if len(TRAIN_SIZES) == 1 else None
+    _, output_file = get_output_paths(final_train_size, algorithm_filter, column_order_filter)
 
     if not results:
         print("  WARNING: No experiments produced results! Creating placeholder CSV.")
@@ -1907,6 +1923,13 @@ if __name__ == "__main__":
         help="Seed values to skip; replacements are sampled so the total number of repetitions stays unchanged."
     )
     parser.add_argument(
+        "--train-sizes",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Run only these train sizes while preserving the full-run seed schedule.",
+    )
+    parser.add_argument(
         "--train-sizes-group", choices=["small", "large", "all"], default=None,
         help="Optionally restrict train sizes: small=[20,50,100], large=[200,500,1000]."
     )
@@ -1931,6 +1954,7 @@ if __name__ == "__main__":
         dataset_name=args.dataset,
         column_order_filter=args.column_order,
         repetitions=args.repetitions,
+        train_sizes=args.train_sizes,
         train_sizes_group=args.train_sizes_group,
         skip_seeds=args.skip_seeds,
     )

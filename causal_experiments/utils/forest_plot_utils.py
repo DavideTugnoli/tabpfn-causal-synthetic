@@ -667,9 +667,36 @@ def _calculate_tight_xlim_from_data(df: pd.DataFrame, step: float | None = None)
     return float(x_min_rounded), float(x_max_rounded)
 
 
+def _dataframes_xranges_overlap(dfs: List[pd.DataFrame], min_fraction: float = 0.1) -> bool:
+    """Decide whether a combined plot's panels should share one x-axis.
+
+    Returns True only if the panels' x-ranges (over 'effect', 'ci_lower', 'ci_upper')
+    overlap by at least ``min_fraction`` of their union. Panels that sit in largely
+    disjoint regions (e.g. one all-positive, the other all-negative) return False so
+    each panel keeps its own scale instead of leaving half the panel empty.
+    """
+    ranges = []
+    for df in dfs:
+        if df is None or getattr(df, "empty", True):
+            continue
+        vals = []
+        for col in ("effect", "ci_lower", "ci_upper"):
+            if col in df.columns:
+                vals.extend(pd.to_numeric(df[col], errors="coerce").dropna().tolist())
+        if vals:
+            ranges.append((min(vals), max(vals)))
+    if len(ranges) < 2:
+        return True
+    intersection = min(r[1] for r in ranges) - max(r[0] for r in ranges)
+    union = max(r[1] for r in ranges) - min(r[0] for r in ranges)
+    if union <= 0:
+        return True
+    return (intersection / union) >= min_fraction
+
+
 def _calculate_shared_xlim_from_dataframes(dfs: List[pd.DataFrame], step: float | None = None) -> Tuple[float, float]:
     """Calculate shared x-axis limits from multiple dataframes, rounded to multiples of step.
-    
+
     Useful for combined plots where all panels should have the same x-axis scale.
     If step is None, automatically determines appropriate step based on data range.
     

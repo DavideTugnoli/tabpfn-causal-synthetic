@@ -1,0 +1,2 @@
+bundle,file,rows,raw_nnaa_min,raw_nnaa_max,distance_nnaa_min,distance_nnaa_max
+noise1e-2_paper,result_custom_scm_noise1e-2_comparison_experiment_cleaned_reps_100.csv,3000,0.4842499999999999,0.88725,0.0,0.38725

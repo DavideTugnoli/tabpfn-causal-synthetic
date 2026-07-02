@@ -1,0 +1,54 @@
+\begin{tabular}{lrlrrlrrc}
+\toprule
+Dataset & N & Units & Abs. ATE\_test & Vanilla median abs. ATE error & Comparator & Comparator median abs. ATE error & HL diff (vanilla - comparator) & Significant \\
+\midrule
+CSM & 20 & SCM outcome units & 4.98 & 1.23 & DAG-aware & 0.186 & 1.23 & Y \\
+CSM & 50 & SCM outcome units & 4.98 & 1.15 & DAG-aware & 0.183 & 1.00 & Y \\
+CSM & 100 & SCM outcome units & 4.98 & 0.826 & DAG-aware & 0.163 & 0.649 & Y \\
+CSM & 200 & SCM outcome units & 4.98 & 0.343 & DAG-aware & 0.162 & 0.268 & Y \\
+CSM & 500 & SCM outcome units & 4.98 & 0.274 & DAG-aware & 0.152 & 0.14 & Y \\
+CSM & 1000 & SCM outcome units & 4.98 & 0.243 & DAG-aware & 0.151 & 0.119 & Y \\
+CMC & 20 & native outcome units & 1.03 & 0.389 & DAG-aware & 0.479 & -0.063 & Y \\
+CMC & 50 & native outcome units & 1.03 & 0.173 & DAG-aware & 0.105 & 0.037 & Y \\
+CMC & 100 & native outcome units & 1.03 & 0.129 & DAG-aware & 0.0873 & 0.0286 & Y \\
+CMC & 200 & native outcome units & 1.03 & 0.0926 & DAG-aware & 0.0554 & 0.0357 & Y \\
+CMC & 500 & native outcome units & 1.03 & 0.0894 & DAG-aware & 0.0453 & 0.0337 & Y \\
+CMC & 1000 & native outcome units & 1.03 & 0.0701 & DAG-aware & 0.0527 & 0.0231 & Y \\
+CNS & 20 & native outcome units & 1.96 & 0.73 & DAG-aware & 0.289 & 0.525 & Y \\
+CNS & 50 & native outcome units & 1.96 & 0.419 & DAG-aware & 0.123 & 0.337 & Y \\
+CNS & 100 & native outcome units & 1.96 & 0.278 & DAG-aware & 0.101 & 0.199 & Y \\
+CNS & 200 & native outcome units & 1.96 & 0.178 & DAG-aware & 0.142 & 0.0684 & Y \\
+CNS & 500 & native outcome units & 1.96 & 0.129 & DAG-aware & 0.126 & 0.00424 & N \\
+CNS & 1000 & native outcome units & 1.96 & 0.106 & DAG-aware & 0.0519 & 0.0562 & Y \\
+CSS & 20 & native outcome units & 0.0371 & 0.212 & DAG-aware & 0.262 & -0.0538 & Y \\
+CSS & 50 & native outcome units & 0.0371 & 0.237 & DAG-aware & 0.219 & -0.00167 & N \\
+CSS & 100 & native outcome units & 0.0371 & 0.137 & DAG-aware & 0.151 & -0.00683 & N \\
+CSS & 200 & native outcome units & 0.0371 & 0.0901 & DAG-aware & 0.0849 & 0.00135 & N \\
+CSS & 500 & native outcome units & 0.0371 & 0.0673 & DAG-aware & 0.0458 & 0.0201 & Y \\
+CSS & 1000 & native outcome units & 0.0371 & 0.0577 & DAG-aware & 0.0446 & 0.0126 & N \\
+CMS & 20 & native outcome units & 0.727 & 0.491 & DAG-aware & 0.133 & 0.348 & Y \\
+CMS & 50 & native outcome units & 0.727 & 0.445 & DAG-aware & 0.0742 & 0.33 & Y \\
+CMS & 100 & native outcome units & 0.727 & 0.192 & DAG-aware & 0.0677 & 0.145 & Y \\
+CMS & 200 & native outcome units & 0.727 & 0.094 & DAG-aware & 0.0496 & 0.0511 & Y \\
+CMS & 500 & native outcome units & 0.727 & 0.0705 & DAG-aware & 0.0496 & 0.0242 & Y \\
+CMS & 1000 & native outcome units & 0.727 & 0.081 & DAG-aware & 0.0565 & 0.0211 & Y \\
+CWA & 20 & native outcome units & 1.08 & 0.491 & DAG-aware & 0.523 & -0.0118 & N \\
+CWA & 50 & native outcome units & 1.08 & 0.144 & DAG-aware & 0.152 & 0.00659 & N \\
+CWA & 100 & native outcome units & 1.08 & 0.1 & DAG-aware & 0.0901 & -0.000419 & N \\
+CWA & 200 & native outcome units & 1.08 & 0.0779 & DAG-aware & 0.0853 & -0.00565 & N \\
+CWA & 500 & native outcome units & 1.08 & 0.0605 & DAG-aware & 0.0454 & 0.0124 & N \\
+CWA & 1000 & native outcome units & 1.08 & 0.0274 & DAG-aware & 0.0352 & -0.00562 & N \\
+CLB & 20 & native outcome units & 0.593 & 0.402 & DAG-aware & 0.328 & 0.0336 & Y \\
+CLB & 50 & native outcome units & 0.593 & 0.271 & DAG-aware & 0.221 & 0.0433 & Y \\
+CLB & 100 & native outcome units & 0.593 & 0.14 & DAG-aware & 0.111 & 0.03 & Y \\
+CLB & 200 & native outcome units & 0.593 & 0.0961 & DAG-aware & 0.0782 & 0.00725 & N \\
+CLB & 500 & native outcome units & 0.593 & 0.0556 & DAG-aware & 0.0533 & 0.00443 & N \\
+CLB & 1000 & native outcome units & 0.593 & 0.0405 & DAG-aware & 0.0301 & 0.0087 & N \\
+SGL & 20 & mg/dL & 2.29 & 84.9 & Vanilla topological & 50.7 & 31.3 & Y \\
+SGL & 50 & mg/dL & 2.29 & 65.2 & Vanilla topological & 64.4 & 14.9 & N \\
+SGL & 100 & mg/dL & 2.29 & 79.0 & Vanilla topological & 51.8 & 23.2 & Y \\
+SGL & 200 & mg/dL & 2.29 & 58.9 & Vanilla topological & 23.9 & 34.4 & Y \\
+SGL & 500 & mg/dL & 2.29 & 39.6 & Vanilla topological & 15.9 & 24.3 & Y \\
+SGL & 1000 & mg/dL & 2.29 & 43.5 & Vanilla topological & 28.1 & 9.06 & Y \\
+\bottomrule
+\end{tabular}

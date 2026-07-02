@@ -347,6 +347,9 @@ def main(
     algorithm_filter: str | None = None,
     column_order_filter: str | None = None,
     noise_level: float | None = None,
+    train_sizes: list[int] | None = None,
+    repetitions: int | None = None,
+    seed_start: int = 0,
 ):
     """Main experimental pipeline.
     
@@ -358,19 +361,40 @@ def main(
         save_synthetic: If True, save synthetic data for analysis
         algorithm_filter: If provided, run only the specified algorithm
         column_order_filter: If provided, run only the specified column ordering (for vanilla and CPDAG algorithms)
+        train_sizes: Optional train-size override
+        repetitions: Optional number of repetitions per train size
+        seed_start: Starting seed for the linear seed schedule
     """
     # ======================
     # EXPERIMENTAL PARAMETERS
     # ======================
 
     if test_mode:
+        ALL_TRAIN_SIZES_ORDERED = [20, 50, 100]
         TRAIN_SIZES = [20, 50, 100]
         TEST_SIZE = 100
         N_REPETITIONS = 10  # Number of repetitions per (algorithm, column_order, train_size)
     else:
+        ALL_TRAIN_SIZES_ORDERED = [20, 50, 100, 200, 500]
         TRAIN_SIZES = [20, 50, 100, 200, 500]
         TEST_SIZE = 2000
         N_REPETITIONS = 120  # Number of repetitions per (algorithm, column_order, train_size)
+
+    if train_sizes is not None:
+        requested_train_sizes = sorted(set(train_sizes))
+        invalid_sizes = [ts for ts in requested_train_sizes if ts not in ALL_TRAIN_SIZES_ORDERED]
+        if invalid_sizes:
+            raise ValueError(
+                f"Invalid train sizes {invalid_sizes}; expected subset of {ALL_TRAIN_SIZES_ORDERED}"
+            )
+        TRAIN_SIZES = sorted(requested_train_sizes, key=ALL_TRAIN_SIZES_ORDERED.index)
+        print(f"Custom train sizes requested: {TRAIN_SIZES}")
+    if repetitions is not None:
+        if repetitions <= 0:
+            raise ValueError("repetitions must be positive")
+        N_REPETITIONS = repetitions
+    if seed_start < 0:
+        raise ValueError("seed_start must be non-negative")
 
     # TabPFN parameters
     N_ESTIMATORS = 3
@@ -387,14 +411,15 @@ def main(
     if noise_level is not None:
         results_dir_name = f"results_{_format_noise_tag(noise_level)}"
     output_dir = base_results_dir / results_dir_name
+    train_size_suffix = f"_ts{TRAIN_SIZES[0]}" if len(TRAIN_SIZES) == 1 else ""
     if algorithm_filter and column_order_filter:
-        output_file = output_dir / f"results_{algorithm_filter}_{column_order_filter}.csv"
+        output_file = output_dir / f"results_{algorithm_filter}_{column_order_filter}{train_size_suffix}.csv"
     elif algorithm_filter:
-        output_file = output_dir / f"results_{algorithm_filter}.csv"
+        output_file = output_dir / f"results_{algorithm_filter}{train_size_suffix}.csv"
     elif column_order_filter:
-        output_file = output_dir / f"comparison_results_{column_order_filter}.csv"
+        output_file = output_dir / f"comparison_results_{column_order_filter}{train_size_suffix}.csv"
     else:
-        output_file = output_dir / "comparison_results.csv"
+        output_file = output_dir / f"comparison_results{train_size_suffix}.csv"
     print(f"Results will be saved to: {output_file}")
 
 
@@ -502,6 +527,8 @@ def main(
                 continue
             if column_order_filter and row.get('column_order') != column_order_filter:
                 continue
+            if row.get('train_size') not in TRAIN_SIZES:
+                continue
             seed_for_key_raw = row.get('seed')
             try:
                 seed_for_key = int(seed_for_key_raw)
@@ -579,16 +606,23 @@ def main(
 
     print("Generating train sets with linear seed counter...")
 
-    total_datasets_needed = len(TRAIN_SIZES) * N_REPETITIONS
-    print(f"Will generate {total_datasets_needed} unique datasets using seeds 0 to {total_datasets_needed-1}")
+    train_size_to_seeds = {
+        train_size: [
+            seed_start + ALL_TRAIN_SIZES_ORDERED.index(train_size) * N_REPETITIONS + rep_idx
+            for rep_idx in range(N_REPETITIONS)
+        ]
+        for train_size in TRAIN_SIZES
+    }
+    total_datasets_needed = sum(len(seeds) for seeds in train_size_to_seeds.values())
+    min_seed = min(seed for seeds in train_size_to_seeds.values() for seed in seeds)
+    max_seed = max(seed for seeds in train_size_to_seeds.values() for seed in seeds)
+    print(f"Will generate {total_datasets_needed} unique datasets using seeds {min_seed} to {max_seed}")
 
     datasets_dir = output_dir / "datasets"
     datasets_dir.mkdir(parents=True, exist_ok=True)
 
-    linear_seed = 0
     for train_size in TRAIN_SIZES:
-        for rep_idx in range(N_REPETITIONS):
-            seed = linear_seed
+        for rep_idx, seed in enumerate(train_size_to_seeds[train_size]):
             seed_to_metadata[seed] = (train_size, rep_idx + 1)
 
             dataset_file = datasets_dir / f"train_ts{train_size}_s{seed}.npz"
@@ -627,7 +661,6 @@ def main(
 
             if loaded_successfully:
                 cached_datasets += 1
-                linear_seed += 1
                 continue
 
             rng_split = np.random.default_rng(seed)
@@ -659,10 +692,10 @@ def main(
                 train_dataset_paths[seed] = ""
 
             regenerated_datasets += 1
-            linear_seed += 1
 
-            if linear_seed % 20 == 0:
-                print(f"Generated {linear_seed} splits")
+            generated_count = cached_datasets + regenerated_datasets
+            if generated_count % 20 == 0:
+                print(f"Generated {generated_count} splits")
 
     if cached_datasets:
         print(f"   Cached datasets loaded for {cached_datasets} seeds")
@@ -684,17 +717,8 @@ def main(
             if column_order_filter and column_order != column_order_filter:
                 continue
             
-            # Reset base seed for each (algorithm, column_order) combination
-            # This ensures fair comparison: same seeds = same data across algorithms
-            # SCIENTIFIC IMPROVEMENT: Use same seeds across train_sizes
-            
-            # Linear seed counter approach - use same seed sequence for all algorithms
-            linear_seed = 0  # Reset to 0 for each algorithm to ensure same seeds across algorithms
-
             for train_size in TRAIN_SIZES:
-                for rep_idx in range(N_REPETITIONS):
-                    seed = linear_seed  # 0, 1, 2, 3, 4, 5, ... (same for all algorithms!)
-                    linear_seed += 1  # Always move to the next dataset, even if we skip below
+                for rep_idx, seed in enumerate(train_size_to_seeds[train_size]):
                     repetition = rep_idx + 1  # 1-based repetition counter for this train_size
                     
                     # Skip if already completed
@@ -1149,6 +1173,24 @@ if __name__ == "__main__":
             "If set, expects noise-tagged datasets and writes results to a noise-specific directory."
         ),
     )
+    parser.add_argument(
+        "--train-sizes",
+        type=int,
+        nargs="+",
+        help="Override train sizes with one or more positive integers. Example: --train-sizes 20 50 100",
+    )
+    parser.add_argument(
+        "--repetitions",
+        type=int,
+        default=None,
+        help="Number of repetitions per train size. Defaults to 120 (or 10 in --test).",
+    )
+    parser.add_argument(
+        "--seed-start",
+        type=int,
+        default=0,
+        help="Starting seed for the linear seed schedule (default: 0).",
+    )
     args = parser.parse_args()
 
     # Set up environment for reproducibility
@@ -1169,4 +1211,7 @@ if __name__ == "__main__":
         algorithm_filter=args.algorithm,
         column_order_filter=args.column_order,
         noise_level=args.noise_level,
+        train_sizes=args.train_sizes,
+        repetitions=args.repetitions,
+        seed_start=args.seed_start,
     )

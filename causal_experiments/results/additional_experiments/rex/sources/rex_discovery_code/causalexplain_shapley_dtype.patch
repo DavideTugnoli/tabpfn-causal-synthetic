@@ -1,0 +1,22 @@
+diff --git a/causalexplain/explainability/shapley.py b/causalexplain/explainability/shapley.py
+index fb44175..2f434b0 100644
+--- a/causalexplain/explainability/shapley.py
++++ b/causalexplain/explainability/shapley.py
+@@ -1944,7 +1944,7 @@ class ShapEstimator(BaseEstimator):
+         if not self.is_fitted_:
+             raise ValueError("This Rex instance is not fitted yet. \
+                 Call 'fit' with appropriate arguments before using this estimator.")
+-        self.discrepancies = pd.DataFrame(columns=self.feature_names)
++        self.discrepancies = pd.DataFrame(columns=self.feature_names, dtype=float)
+         self.shap_discrepancies = defaultdict(dict)
+         for target_name in self.feature_names:
+ 
+@@ -1954,7 +1954,7 @@ class ShapEstimator(BaseEstimator):
+             feature_names = [
+                 f for f in self.feature_names if f != target_name]
+ 
+-            self.discrepancies.loc[target_name] = 0
++            self.discrepancies.loc[target_name] = 0.0
+             self.shap_discrepancies[target_name] = {}
+ 
+             # Loop through all features and compute the discrepancy

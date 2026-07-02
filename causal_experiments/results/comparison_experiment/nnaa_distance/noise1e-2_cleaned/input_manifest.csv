@@ -1,0 +1,9 @@
+bundle,file,rows,raw_nnaa_min,raw_nnaa_max,distance_nnaa_min,distance_nnaa_max
+noise1e-2_cleaned,result_csuite_large_backdoor_comparison_experiment_cleaned_reps_100.csv,3000,0.4884999999999999,0.7475,0.0,0.24750000000000005
+noise1e-2_cleaned,result_csuite_mixed_confounding_comparison_experiment_cleaned_reps_100.csv,3000,0.4862499999999999,0.7324999999999999,0.00024999999999997247,0.23249999999999993
+noise1e-2_cleaned,result_csuite_mixed_simpson_comparison_experiment_cleaned_reps_100.csv,3000,0.4992499999999999,0.8692500000000001,0.0007500000000000839,0.3692500000000001
+noise1e-2_cleaned,result_csuite_nonlin_simpson_comparison_experiment_cleaned_reps_100.csv,3000,0.47975,0.69025,0.0,0.19025000000000003
+noise1e-2_cleaned,result_csuite_symprod_simpson_comparison_experiment_cleaned_reps_100.csv,3000,0.4855,0.70975,0.0,0.20975
+noise1e-2_cleaned,result_csuite_weak_arrows_comparison_experiment_cleaned_reps_100.csv,3000,0.4842499999999999,0.75325,0.00024999999999997247,0.25325
+noise1e-2_cleaned,result_custom_scm_noise1e-2_comparison_experiment_cleaned_reps_100.csv,3000,0.4842499999999999,0.88725,0.0,0.38725
+noise1e-2_cleaned,result_simglucose_comparison_experiment_cleaned_reps_100.csv,1000,0.79175,0.963,0.29174999999999995,0.46299999999999997

@@ -11,9 +11,9 @@ csuite_nonlin_simpson,ate_relative_error,ate_relative_error,100,6,100,186.457109
 csuite_nonlin_simpson,ate_relative_error,ate_relative_error,200,6,100,110.04255943645455,4.0133474482793337e-22
 csuite_nonlin_simpson,ate_relative_error,ate_relative_error,500,6,100,59.77738722905661,1.351255004666253e-11
 csuite_nonlin_simpson,ate_relative_error,ate_relative_error,1000,6,100,55.14496955639301,1.2187231700250651e-10
-csuite_nonlin_simpson,ate_synthetic,ate_estimate,20,6,100,123.77094972067037,4.985515187966922e-25
-csuite_nonlin_simpson,ate_synthetic,ate_estimate,50,6,100,84.5176470588233,9.501416607607498e-17
-csuite_nonlin_simpson,ate_synthetic,ate_estimate,100,6,100,55.035252643948475,1.283744494429001e-10
-csuite_nonlin_simpson,ate_synthetic,ate_estimate,200,6,100,34.970648664514364,1.5250813091733371e-06
-csuite_nonlin_simpson,ate_synthetic,ate_estimate,500,6,100,100.78500292911518,3.610683242413249e-20
-csuite_nonlin_simpson,ate_synthetic,ate_estimate,1000,6,100,159.90866917947253,1.0351955451198105e-32
+csuite_nonlin_simpson,ate_synthetic,ate_estimate,20,6,100,123.66627497062281,5.24683669315435e-25
+csuite_nonlin_simpson,ate_synthetic,ate_estimate,50,6,100,84.37463300058717,1.0180427777500699e-16
+csuite_nonlin_simpson,ate_synthetic,ate_estimate,100,6,100,54.99706744868014,1.3071769477560119e-10
+csuite_nonlin_simpson,ate_synthetic,ate_estimate,200,6,100,34.84777517564395,1.6136488822628296e-06
+csuite_nonlin_simpson,ate_synthetic,ate_estimate,500,6,100,100.59450774174682,3.960469388780599e-20
+csuite_nonlin_simpson,ate_synthetic,ate_estimate,1000,6,100,159.5386172982357,1.2413311103215633e-32

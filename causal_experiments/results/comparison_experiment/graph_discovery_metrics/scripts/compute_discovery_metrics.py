@@ -34,7 +34,7 @@ REQUIRED_COLUMNS = {"algorithm", "graph_structure", "train_size", "seed"}
 def _find_result_csvs(repo_root: Path) -> list[Path]:
     candidates: list[Path] = []
 
-    # Canonical source for rebuttal-ready, cleaned comparison data.
+    # Canonical source for the cleaned comparison data.
     data_dir = repo_root / "causal_experiments" / "results" / "comparison_experiment" / "data"
     if data_dir.exists():
         candidates.extend(sorted(data_dir.glob("*.csv")))

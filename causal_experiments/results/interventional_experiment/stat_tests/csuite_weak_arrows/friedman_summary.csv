@@ -11,7 +11,7 @@ csuite_weak_arrows,ate_relative_error,ate_relative_error,100,6,100,10.9530026109
 csuite_weak_arrows,ate_relative_error,ate_relative_error,200,6,100,8.265954374819652,0.14217466240264726
 csuite_weak_arrows,ate_relative_error,ate_relative_error,500,6,100,24.451271791940638,0.00017777538992359574
 csuite_weak_arrows,ate_relative_error,ate_relative_error,1000,6,100,29.257142857142753,2.064373473605525e-05
-csuite_weak_arrows,ate_synthetic,ate_estimate,20,6,100,8.862170087976681,0.11468963797370584
+csuite_weak_arrows,ate_synthetic,ate_estimate,20,6,100,8.863969510407676,0.1146145263678108
 csuite_weak_arrows,ate_synthetic,ate_estimate,50,6,100,15.66084425036379,0.007882136548330788
 csuite_weak_arrows,ate_synthetic,ate_estimate,100,6,100,40.47142442703797,1.1996695388658424e-07
 csuite_weak_arrows,ate_synthetic,ate_estimate,200,6,100,22.94975454807987,0.00034511424477364335

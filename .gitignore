@@ -151,6 +151,11 @@ logs/
 # Ignore all results/ directories except causal_experiments/results/
 results/
 !causal_experiments/results
+!external_baselines/
+!external_baselines/**/
+!external_baselines/**/results/
+!external_baselines/**/results/final_*/
+!external_baselines/**/results/final_*/**
 temp/
 *.png
 
@@ -167,3 +172,70 @@ temp/
 
 # Matplotlib cache
 .matplotlib_cache/
+
+# Project generated data and synthetic artifacts
+*.npz
+*.pkl
+*.pickle
+*.parquet
+*.h5
+*.hdf5
+causal_experiments/**/datasets/
+causal_experiments/**/synthetic/
+causal_experiments/**/synthetic_data/
+causal_experiments/**/interventional_results/
+causal_experiments/**/comparison_results/raw/
+causal_experiments/**/runs/
+causal_experiments/results/**/data/raw/
+data/cleaned_npz_archive/
+data/partial_fix/
+
+# Local-only recovery, backup, and heavyweight experiment artifacts
+backup/
+local_backup/
+remote_patch_downloads/
+partial_fix/
+**/backup/
+**/partial_fix/
+external_baselines/**/upstream/
+external_baselines/**/vendor/
+external_baselines/**/env/
+external_baselines/**/.venv/
+external_baselines/**/runs/
+external_baselines/**/raw/
+external_baselines/**/synthetic/
+external_baselines/**/*.npz
+external_baselines/**/*.pkl
+external_baselines/**/*.pickle
+
+# Folded from per-baseline .gitignore files
+external_baselines/**/tmp_workspaces/
+# pycache inside result bundles (the broad final_* re-include would otherwise sweep it in)
+external_baselines/**/results/final_*/**/__pycache__/
+external_baselines/**/results/final_*/**/*.pyc
+
+# Slurm job scripts and directories are cluster-specific, not for the repo
+*.slurm
+**/slurm/
+
+# Only README / DEFAULTS / CONTRIBUTING markdown belongs in git
+# (result tables and summaries live in the CSVs; working notes stay local)
+*.md
+!**/README.md
+!**/DEFAULTS.md
+!**/CONTRIBUTING.md
+
+# Cluster launchers, environment setup, and cluster config templates
+*.slurm
+slurm/
+submit_*.sh
+create_env_leonardo.sh
+setup_container_env_leonardo.sh
+datasets_leonardo_template.csv
+causal_experiments/results/additional_experiments/ci_preservation/interventional/validate_interventional_npz_metrics.py
+
+# Internal working documents (not part of the scientific record)
+docs/
+causal_experiments/results/additional_experiments/ci_preservation/ci_preservation_plan.md
+slurm-*.out
+slurm-*.err

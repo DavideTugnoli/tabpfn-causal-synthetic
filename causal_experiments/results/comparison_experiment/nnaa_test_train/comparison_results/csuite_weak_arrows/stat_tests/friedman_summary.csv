@@ -1,0 +1,16 @@
+dataset,metric,metric_slug,train_size,n_conditions,n_pairs,statistic,p_value
+csuite_weak_arrows,correlation_matrix_difference,correlation_matrix_difference,20,6,100,141.56414762741665,8.320610440818168e-29
+csuite_weak_arrows,correlation_matrix_difference,correlation_matrix_difference,50,6,100,197.8351264902588,8.250702537700438e-41
+csuite_weak_arrows,correlation_matrix_difference,correlation_matrix_difference,100,6,100,133.88727060879717,3.5593497734085454e-27
+csuite_weak_arrows,correlation_matrix_difference,correlation_matrix_difference,200,6,100,106.84432181237287,1.901658100345612e-21
+csuite_weak_arrows,correlation_matrix_difference,correlation_matrix_difference,500,6,100,167.91618828932255,2.0307498052225006e-34
+csuite_weak_arrows,k_marginal_tvd,2marginal,20,6,100,36.32508833922258,8.176868829234603e-07
+csuite_weak_arrows,k_marginal_tvd,2marginal,50,6,100,24.255474452554957,0.00019389290446595494
+csuite_weak_arrows,k_marginal_tvd,2marginal,100,6,100,23.707124010554026,0.0002471294194815358
+csuite_weak_arrows,k_marginal_tvd,2marginal,200,6,100,30.005824111823003,1.4709702119614433e-05
+csuite_weak_arrows,k_marginal_tvd,2marginal,500,6,100,53.53490376328622,2.611680074642537e-10
+csuite_weak_arrows,nnaa,nnaa,20,6,100,111.79411764705873,1.711056469812578e-22
+csuite_weak_arrows,nnaa,nnaa,50,6,99,127.51475796930347,8.014168330978384e-26
+csuite_weak_arrows,nnaa,nnaa,100,6,100,103.26163301141332,1.0846851303491536e-20
+csuite_weak_arrows,nnaa,nnaa,200,6,100,107.07047175305755,1.7036347775046154e-21
+csuite_weak_arrows,nnaa,nnaa,500,6,100,42.33908045977015,5.029339152664457e-08

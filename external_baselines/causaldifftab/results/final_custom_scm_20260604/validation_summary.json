@@ -1,0 +1,66 @@
+{
+  "valid": true,
+  "input_csvs": 1,
+  "rows": 500,
+  "dataset": "custom_scm",
+  "expected_train_sizes": [
+    20,
+    50,
+    100,
+    200,
+    500
+  ],
+  "observed_train_sizes": [
+    20,
+    50,
+    100,
+    200,
+    500
+  ],
+  "expected_repetitions_per_cell": 100,
+  "duplicate_rows": 0,
+  "failure_rows": 0,
+  "nonfinite_metric_rows": 0,
+  "cell_counts": [
+    {
+      "dataset": "custom_scm",
+      "algorithm": "causaldifftab",
+      "column_order": "unconditional",
+      "train_size": 20,
+      "n_rows": 100,
+      "n_unique_seeds": 100
+    },
+    {
+      "dataset": "custom_scm",
+      "algorithm": "causaldifftab",
+      "column_order": "unconditional",
+      "train_size": 50,
+      "n_rows": 100,
+      "n_unique_seeds": 100
+    },
+    {
+      "dataset": "custom_scm",
+      "algorithm": "causaldifftab",
+      "column_order": "unconditional",
+      "train_size": 100,
+      "n_rows": 100,
+      "n_unique_seeds": 100
+    },
+    {
+      "dataset": "custom_scm",
+      "algorithm": "causaldifftab",
+      "column_order": "unconditional",
+      "train_size": 200,
+      "n_rows": 100,
+      "n_unique_seeds": 100
+    },
+    {
+      "dataset": "custom_scm",
+      "algorithm": "causaldifftab",
+      "column_order": "unconditional",
+      "train_size": 500,
+      "n_rows": 100,
+      "n_unique_seeds": 100
+    }
+  ]
+}

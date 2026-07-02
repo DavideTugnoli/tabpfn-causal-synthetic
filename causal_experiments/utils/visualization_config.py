@@ -180,7 +180,7 @@ METRIC_CONFIG = {
         'scale': 'linear'
     },
     'ate_difference': {
-        'title': 'ATE Difference (Estimate - Ground Truth)',
+        'title': r'Absolute ATE Error $|$Ground Truth $-$ Estimate$|$',
         'slug': 'ate_difference',
         'ylim': 'auto_tight',
         'scale': 'linear'

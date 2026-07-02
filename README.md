@@ -41,7 +41,11 @@ The core experimental code is located in `causal_experiments/`.
 
 ### Results
 
-*   **`causal_experiments/results/`**: Consolidated CSVs and plots used in the paper.
+*   **`causal_experiments/results/comparison_experiment/`**: Distribution-metric results (cleaned CSVs, forest plots, statistics), including the `|NNAA - 0.5|` builds (`nnaa_distance/`) and the NNAA train-versus-test analysis (`nnaa_test_train/`).
+*   **`causal_experiments/results/interventional_experiment/`**: ATE-preservation results, including the outcome-scale reference tables (`ate_outcome_scale/`).
+*   **`causal_experiments/results/additional_experiments/`**: Appendix experiments (REX discovery, PC-recoverable Custom SCM variant, random-order sensitivity, conditional-independence preservation, external-baseline tables).
+*   **`causal_experiments/results/correlations/`**: Spurious-correlation tables for the Custom SCM.
+*   **`external_baselines/`**: External tabular generators (TabularARGN, CausalDiffTab, CTGAN, DATGAN, DECAF) with a shared evaluation protocol and final result bundles.
 *   Running experiments generates outputs in each experiment's `results/` subdirectory.
 
 ## Implementation

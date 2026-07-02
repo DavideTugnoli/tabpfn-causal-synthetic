@@ -1,0 +1,54 @@
+{
+  "paired_rows": 7500,
+  "all_losses_finite": true,
+  "cmc_n20_cmd": [
+    {
+      "dataset": "csuite_mixed_confounding",
+      "train_size": 20,
+      "tabpfn_method": "TabPFN DAG-aware",
+      "metric": "CMD",
+      "n_pairs": 100,
+      "tabularargn_median_loss": 2.129613797259267,
+      "tabpfn_median_loss": 0.9731942501221684,
+      "median_loss_diff_tabularargn_minus_tabpfn": 1.1662924922712072,
+      "hodges_lehmann_diff_tabularargn_minus_tabpfn": 1.1695588270870898,
+      "wilcoxon_pratt_p_tabularargn_greater": 1.9482799225479546e-18,
+      "tabpfn_better_fraction": 1.0,
+      "tabularargn_better_fraction": 0.0,
+      "tie_fraction": 0.0,
+      "wilcoxon_pratt_p_holm_by_tabpfn_method": 1.4583275902991996e-16
+    },
+    {
+      "dataset": "csuite_mixed_confounding",
+      "train_size": 20,
+      "tabpfn_method": "TabPFN vanilla original",
+      "metric": "CMD",
+      "n_pairs": 100,
+      "tabularargn_median_loss": 2.129613797259267,
+      "tabpfn_median_loss": 1.0962162605233114,
+      "median_loss_diff_tabularargn_minus_tabpfn": 1.0436470068958559,
+      "hodges_lehmann_diff_tabularargn_minus_tabpfn": 1.0371550332545925,
+      "wilcoxon_pratt_p_tabularargn_greater": 1.9482799225479546e-18,
+      "tabpfn_better_fraction": 1.0,
+      "tabularargn_better_fraction": 0.0,
+      "tie_fraction": 0.0,
+      "wilcoxon_pratt_p_holm_by_tabpfn_method": 1.4600563538316172e-16
+    },
+    {
+      "dataset": "csuite_mixed_confounding",
+      "train_size": 20,
+      "tabpfn_method": "TabPFN vanilla topological",
+      "metric": "CMD",
+      "n_pairs": 100,
+      "tabularargn_median_loss": 2.129613797259267,
+      "tabpfn_median_loss": 1.096795300350625,
+      "median_loss_diff_tabularargn_minus_tabpfn": 1.0491434056693463,
+      "hodges_lehmann_diff_tabularargn_minus_tabpfn": 1.0400495344841365,
+      "wilcoxon_pratt_p_tabularargn_greater": 1.9482799225479546e-18,
+      "tabpfn_better_fraction": 1.0,
+      "tabularargn_better_fraction": 0.0,
+      "tie_fraction": 0.0,
+      "wilcoxon_pratt_p_holm_by_tabpfn_method": 1.4587390245802595e-16
+    }
+  ]
+}

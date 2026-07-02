@@ -1,5 +1,5 @@
 dataset,metric,metric_slug,train_size,n_conditions,n_pairs,statistic,p_value
-csuite_mixed_simpson,ate_difference,ate_difference,20,6,100,240.85800604229615,5.025820646331252e-50
+csuite_mixed_simpson,ate_difference,ate_difference,20,6,100,240.81395348837205,5.136351109282812e-50
 csuite_mixed_simpson,ate_difference,ate_difference,50,6,100,235.314294348746,7.76187089576941e-49
 csuite_mixed_simpson,ate_difference,ate_difference,100,6,100,159.34532809192598,1.3648344220796706e-32
 csuite_mixed_simpson,ate_difference,ate_difference,200,6,100,86.70475045099208,3.3046385883635085e-17

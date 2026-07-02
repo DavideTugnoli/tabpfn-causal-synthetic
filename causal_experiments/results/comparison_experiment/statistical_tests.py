@@ -389,17 +389,22 @@ def run_stat_tests_for_dataset(
         # 1. All comparisons against vanilla_original
         # 2. The comparison vanilla_topological vs dag_topological
         # 3. The comparison cpdag_discovered_original vs dag_discovered_topological
+        # 4. The comparison vanilla_random vs dag_topological (random-order sensitivity)
         prespecified_mask = (
             (posthoc_df["condition_a"] == "vanilla_original") |
             (posthoc_df["condition_b"] == "vanilla_original") |
-            ((posthoc_df["condition_a"] == "vanilla_topological") & 
+            ((posthoc_df["condition_a"] == "vanilla_topological") &
              (posthoc_df["condition_b"] == "dag_topological")) |
-            ((posthoc_df["condition_a"] == "dag_topological") & 
+            ((posthoc_df["condition_a"] == "dag_topological") &
              (posthoc_df["condition_b"] == "vanilla_topological")) |
             ((posthoc_df["condition_a"] == "cpdag_discovered_original") &
              (posthoc_df["condition_b"] == "dag_discovered_topological")) |
             ((posthoc_df["condition_a"] == "dag_discovered_topological") &
-             (posthoc_df["condition_b"] == "cpdag_discovered_original"))
+             (posthoc_df["condition_b"] == "cpdag_discovered_original")) |
+            ((posthoc_df["condition_a"] == "vanilla_random") &
+             (posthoc_df["condition_b"] == "dag_topological")) |
+            ((posthoc_df["condition_a"] == "dag_topological") &
+             (posthoc_df["condition_b"] == "vanilla_random"))
         )
         posthoc_df = posthoc_df[prespecified_mask].copy()
 

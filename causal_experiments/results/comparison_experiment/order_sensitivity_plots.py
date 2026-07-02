@@ -474,6 +474,13 @@ def plot_combined_single_dataset(
         figsize=figsize,
         dpi=DPI,
         fontsize=28,
+        rcParams={
+            "text.usetex": True,
+            "text.latex.preamble": r"\usepackage{times}",
+            "font.family": "serif",
+            "font.serif": ["Times"],
+            "mathtext.fontset": "cm",
+        },
     )
 
     print(f"[OK] Combined 3-panel plot: {pdf_path.name}")

@@ -70,6 +70,7 @@ from causal_experiments.utils.forest_plot_utils import (
     _normalize_metric_title,
     apply_xaxis_tick_locator,
     _calculate_shared_xlim_from_dataframes,
+    _dataframes_xranges_overlap,
     _validate_nnaa_metric,
     _first_valid_value_with_source,
     _first_valid_value,
@@ -215,6 +216,7 @@ CONDITION_COLORS: Dict[str, str] = {
     "dag_discovered_topological": "#2ca02c",
     "cpdag_minimal_original": "#7f7f7f",
     "cpdag_discovered_original": "#9467bd",
+    "vanilla_random": "#17becf",
 }
 
 CONDITION_ORDER: Tuple[str, ...] = tuple(CONDITION_COLORS.keys())
@@ -234,6 +236,10 @@ COMBINED_METRIC_KEYS_DUO: Tuple[str, ...] = (
 )
 COMBINED_METRIC_KEYS_FROBENIUS_NNAA: Tuple[str, ...] = (
     "correlation_matrix_difference",
+    "nnaa",
+)
+COMBINED_METRIC_KEYS_KMTVD_NNAA: Tuple[str, ...] = (
+    "k_marginal_tvd",
     "nnaa",
 )
 COMBINED_COMPARISON_KEY = "cross_dag_topological_vs_vanilla_original"
@@ -268,6 +274,10 @@ PAPER_FOLDER_MAP: Dict[Tuple[str, str], str] = {
         "dag_topological",
     ): "vanilla_topological_vs_dag_topological",
     (
+        "vanilla_random",
+        "dag_topological",
+    ): "vanilla_random_vs_dag_topological",
+    (
         "vanilla_original",
         "dag_discovered_topological",
     ): "vanilla_original_vs_dag_discovered_rex_topological",
@@ -290,8 +300,8 @@ COMPARISON_SPECS: Dict[str, ComparisonSpec] = {
         baseline="vanilla_original",
         comparator="cpdag_minimal_original",
         baseline_label="Vanilla Original",
-        comparator_label="Minimal CPDAG",
-        title="Vanilla Original vs Minimal CPDAG",
+        comparator_label="oracle-PDAG",
+        title="Vanilla Original vs oracle-PDAG",
         group_slug="ordering_original",
         group_label="Original ordering",
     ),
@@ -324,6 +334,16 @@ COMPARISON_SPECS: Dict[str, ComparisonSpec] = {
         title="Vanilla Original vs DAG",
         group_slug="ordering_cross/dag_vs_vanilla",
         group_label="Cross ordering · DAG vs Vanilla",
+    ),
+    "cross_dag_topological_vs_vanilla_random": ComparisonSpec(
+        slug="dag_topological_vs_vanilla_random",
+        baseline="vanilla_random",
+        comparator="dag_topological",
+        baseline_label="Vanilla Random",
+        comparator_label="DAG",
+        title="Vanilla Random vs DAG",
+        group_slug="ordering_cross/dag_vs_vanilla_random",
+        group_label="Cross ordering · DAG vs Vanilla Random",
     ),
     "topological_dag_discovered_vs_vanilla": ComparisonSpec(
         slug="dag_discovered_rex_vs_vanilla_topological",
@@ -559,6 +579,9 @@ DATASET_ACRONYMS: Dict[str, str] = {
     "csuite_weak_arrows": "CWA",
     "custom_scm": "CSM",
     "custom_scm_noise1e-2": "CSMn2",
+    "custom_scm_noise0p1_robustness": "CSM\nn=.1",
+    "custom_scm_noise0p2": "CSMr",
+    "custom_scm_noise0p5_robustness": "CSM\nn=.5",
     "simglucose": "SGL",
 }
 
@@ -603,7 +626,16 @@ def _draw_left_aligned_yticklabels(
 
 
 def _needs_extra_left(labels: Sequence[str]) -> bool:
-    return any(("CSM-1e-2" in label) or ("CSMn2" in label) for label in labels)
+    return any(
+        ("CSM-1e-2" in label)
+        or ("CSMn2" in label)
+        or label.startswith("CSM\nn=")
+        for label in labels
+    )
+
+
+def _needs_compact_custom_noise_offset(labels: Sequence[str]) -> bool:
+    return any(label.startswith("CSM\nn=") for label in labels)
 
 
 def _compute_left_adjustments(
@@ -616,6 +648,15 @@ def _compute_left_adjustments(
         return base_tick_offset, base_labelpad
 
     ratio = TICK_FONT_SIZE_COMBINED / TICK_FONT_SIZE_SINGLE if combined else 1.0
+    if _needs_compact_custom_noise_offset(labels):
+        if combined:
+            extra_tick = -2.0 * ratio
+            extra_labelpad = 2.0 * ratio
+        else:
+            extra_tick = 2.0 * ratio
+            extra_labelpad = 4.0 * ratio
+        return base_tick_offset - extra_tick, base_labelpad + extra_labelpad
+
     # Separate tuning for single vs combined plots.
     if combined:
         # Combined plots need a visible label->graph gap while keeping y-label readable.
@@ -650,9 +691,8 @@ def _abbreviate_label_for_combined_plots(label: str) -> str:
     label = label.replace("DAG Original", "DAG Orig.")
     label = label.replace("DAG Reverse Topological", "DAG Rev. Topo.")
     # Abbreviate CPDAG
-    label = label.replace("Minimal CPDAG", "Min. CPDAG")
-    label = label.replace("Minimal CPDAG Topological", "Min. CPDAG")
-    label = label.replace("Minimal CPDAG Reverse Topological", "Min. CPDAG")
+    label = label.replace("oracle-PDAG Topological", "oracle-PDAG")
+    label = label.replace("oracle-PDAG Reverse Topological", "oracle-PDAG")
     label = label.replace("Discovered CPDAG", "Disc. CPDAG")
     label = label.replace("Discovered CPDAG Topological", "Disc. CPDAG")
     label = label.replace("Discovered CPDAG Reverse Topological", "Disc. CPDAG")
@@ -1166,7 +1206,7 @@ def plot_forest(
 
         label_shortcuts = {
             "Vanilla Reverse Topological": "V. Rev. Topological",
-            "Minimal CPDAG": "Minimal CPDAG",
+            "oracle-PDAG": "oracle-PDAG",
             "Discovered CPDAG": "Discovered CPDAG",
             "DAG": "DAG",
             "DAG Discovered": "DAG Discovered",
@@ -1197,6 +1237,10 @@ def plot_forest(
             title_text = f"{comparison.baseline_label} vs {comparison.comparator_label}\n{title_metric}"
         else:
             title_text = f"{comparison.title} · {title_metric}"
+            # Wrap long titles onto two lines so they stay inside the canvas
+            # (e.g. the |NNAA - 0.5| metric name is too long for one line).
+            if len(title_text) > 80:
+                title_text = f"{comparison.title}\n{title_metric}"
         ax.set_title(title_text, fontsize=title_fs, pad=AXES_TITLE_PAD)
 
         handles = [legend_entries[ts] for ts in train_sizes if ts in legend_entries]
@@ -2223,6 +2267,7 @@ def plot_cpdag_combined_forest(
     train_sizes = sorted({
         int(ts)
         for df in [df_minimal, df_discovered]
+        if not df.empty and "train_size" in df.columns
         for ts in df["train_size"].unique()
         if not pd.isna(ts)
     })
@@ -2287,7 +2332,7 @@ def plot_cpdag_combined_forest(
 
         combined_legend_entries: Dict[int, Any] = {}
 
-        # Subplot 1: Vanilla vs Minimal CPDAG
+        # Subplot 1: Vanilla vs oracle-PDAG
         ax1 = axes[0]
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
@@ -2577,9 +2622,9 @@ def plot_dag_cpdag_minimal_combined_forest(
     show_caption: bool = False,
     no_csv: bool = False,
 ) -> None:
-    """Generate a combined forest plot showing Vanilla vs DAG (left) and Vanilla vs Minimal CPDAG (right)."""
+    """Generate a combined forest plot showing Vanilla vs DAG (left) and Vanilla vs oracle-PDAG (right)."""
     if metric not in METRIC_CONFIG:
-        print(f"[WARN] Unknown metric '{metric}' for DAG+Minimal CPDAG combined forest plot.")
+        print(f"[WARN] Unknown metric '{metric}' for DAG+oracle-PDAG combined forest plot.")
         return
 
     vanilla_vs_dag = _collect_forest_rows(
@@ -2590,7 +2635,7 @@ def plot_dag_cpdag_minimal_combined_forest(
     )
 
     if not vanilla_vs_dag and not vanilla_vs_minimal:
-        print("[INFO] No data available for DAG+Minimal CPDAG combined plot.")
+        print("[INFO] No data available for DAG+oracle-PDAG combined plot.")
         return
 
     df_dag = build_forest_dataframe(vanilla_vs_dag) if vanilla_vs_dag else pd.DataFrame()
@@ -2603,7 +2648,7 @@ def plot_dag_cpdag_minimal_combined_forest(
 
     datasets = sorted(all_datasets)
     if not datasets:
-        print("[INFO] No datasets available for DAG+Minimal CPDAG combined plot.")
+        print("[INFO] No datasets available for DAG+oracle-PDAG combined plot.")
         return
 
     dataset_labels: Dict[str, str] = {}
@@ -2631,7 +2676,7 @@ def plot_dag_cpdag_minimal_combined_forest(
         }
     )
     if not train_sizes:
-        print("[INFO] No train sizes detected for DAG+Minimal CPDAG combined plot.")
+        print("[INFO] No train sizes detected for DAG+oracle-PDAG combined plot.")
         return
 
     offsets = _build_offsets(train_sizes)
@@ -2679,11 +2724,14 @@ def plot_dag_cpdag_minimal_combined_forest(
 
         combined_legend_entries: Dict[int, Any] = {}
         tick_override = TICK_FONT_SIZE_COMBINED
+        # Same-metric combined: share one x-axis across both panels ONLY when their
+        # data ranges overlap; keep per-panel scales when they are disjoint (e.g. one
+        # panel all-positive, the other all-negative) so neither panel is left half empty.
         shared_xlim_cmd: Tuple[float, float] | None = None
-        if metric == "correlation_matrix_difference":
-            dfs_for_shared = [df for df in [df_dag, df_minimal] if not df.empty]
-            if dfs_for_shared:
-                shared_xlim_cmd = _calculate_shared_xlim_from_dataframes(dfs_for_shared, step=0.1)
+        dfs_for_shared = [df for df in [df_dag, df_minimal] if not df.empty]
+        if len(dfs_for_shared) == 2 and _dataframes_xranges_overlap(dfs_for_shared):
+            shared_xlim_cmd = _calculate_shared_xlim_from_dataframes(dfs_for_shared)
+            if metric == "correlation_matrix_difference":
                 # Keep both panels on the same CMD scale, capped at 0.5 on the right.
                 shared_xlim_cmd = (min(shared_xlim_cmd[0], -0.1), 0.5)
 
@@ -2760,7 +2808,7 @@ def plot_dag_cpdag_minimal_combined_forest(
                 )[1],
             )
 
-        # Right panel: Vanilla vs Minimal CPDAG
+        # Right panel: Vanilla vs oracle-PDAG
         ax2 = axes[1]
         ax2.spines["top"].set_visible(False)
         ax2.spines["right"].set_visible(False)
@@ -2962,7 +3010,7 @@ def plot_dag_cpdag_minimal_combined_forest(
             combined_df.to_csv(csv_path, index=False)
 
     print(
-        f"[SUCCESS] Saved DAG+Minimal CPDAG combined forest plot for metric "
+        f"[SUCCESS] Saved DAG+oracle-PDAG combined forest plot for metric "
         f"{metric} in {pdf_path}"
     )
 
@@ -3007,6 +3055,7 @@ def main(
         combined_cmd_kmtvd_keys: Tuple[str, ...] = (
             COMBINED_COMPARISON_KEY,
             "cross_dag_discovered_topological_vs_vanilla_original",
+            "cross_dag_topological_vs_vanilla_random",
         )
         for combined_key in combined_cmd_kmtvd_keys:
             if combined_key not in comparison_keys:
@@ -3039,7 +3088,7 @@ def main(
             if metric in METRIC_CONFIG:
                 plot_cpdag_combined_forest(metric, show_caption=show_caption, no_csv=no_csv)
 
-    # Generate DAG+Minimal CPDAG combined plots if both comparisons are requested
+    # Generate DAG+oracle-PDAG combined plots if both comparisons are requested
     if not single_column and ("cross_dag_topological_vs_vanilla_original" in comparison_keys and
         "original_cpdag_minimal_vs_vanilla" in comparison_keys):
         for metric in requested_metrics:
@@ -3087,6 +3136,29 @@ def main(
             plot_combined_forest(
                 COMBINED_METRIC_KEYS_DUO,
                 rows_lookup_topo_dag,
+                comparison,
+                show_caption=show_caption,
+                no_csv=no_csv,
+            )
+
+    # Generate k-Marginal + NNAA combined plots used in the paper appendix
+    if not single_column and set(COMBINED_METRIC_KEYS_KMTVD_NNAA).issubset(requested_metrics):
+        combined_kmtvd_nnaa_keys: Tuple[str, ...] = (
+            "ordering_effects_vanilla_topological",
+            COMBINED_COMPARISON_KEY,
+            "topological_dag_vs_vanilla",
+        )
+        for combined_key in combined_kmtvd_nnaa_keys:
+            if combined_key not in comparison_keys:
+                continue
+            comparison = COMPARISON_SPECS[combined_key]
+            rows_lookup_kmtvd_nnaa = {
+                metric: rows_cache.get((metric, combined_key), [])
+                for metric in COMBINED_METRIC_KEYS_KMTVD_NNAA
+            }
+            plot_combined_forest(
+                COMBINED_METRIC_KEYS_KMTVD_NNAA,
+                rows_lookup_kmtvd_nnaa,
                 comparison,
                 show_caption=show_caption,
                 no_csv=no_csv,
@@ -3191,12 +3263,23 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Generate single plots in column-friendly format (3.5x3.5 in) under single_column/ subfolder",
     )
+    parser.add_argument(
+        "--nnaa-title",
+        dest="nnaa_title",
+        default=None,
+        help=(
+            "Override the NNAA panel title, e.g. when the input CSVs carry "
+            "|NNAA - 0.5| instead of raw NNAA."
+        ),
+    )
     parser.set_defaults(caption=False)
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.nnaa_title:
+        METRIC_CONFIG["nnaa"]["title"] = args.nnaa_title
     metrics = list(args.metrics)
     comparisons = list(args.comparisons)
     default_comparisons = list(DEFAULT_COMPARISON_KEYS)

@@ -1,0 +1,54 @@
+\begin{tabular}{lrlllllll}
+\toprule
+Dataset & N & Outcome units & |ATE\_test| & Vanilla |Delta\_ATE| median [95\% CI] & Comparator & Comparator |Delta\_ATE| median [95\% CI] & Reduction from medians (\%) & Paired median reduction (\%) \\
+\midrule
+CSuite large backdoor & 20 & native outcome units & 0.593 & 0.402 [0.334, 0.463] & DAG-aware & 0.328 [0.263, 0.393] & 18.4 & 6.96 \\
+CSuite large backdoor & 50 & native outcome units & 0.593 & 0.271 [0.214, 0.354] & DAG-aware & 0.221 [0.185, 0.28] & 18.2 & 15.3 \\
+CSuite large backdoor & 100 & native outcome units & 0.593 & 0.14 [0.108, 0.167] & DAG-aware & 0.111 [0.0782, 0.141] & 20.3 & 19.6 \\
+CSuite large backdoor & 200 & native outcome units & 0.593 & 0.0961 [0.0802, 0.117] & DAG-aware & 0.0782 [0.0639, 0.095] & 18.6 & 7.44 \\
+CSuite large backdoor & 500 & native outcome units & 0.593 & 0.0556 [0.0439, 0.0707] & DAG-aware & 0.0533 [0.0434, 0.0627] & 4.15 & -5.34 \\
+CSuite large backdoor & 1000 & native outcome units & 0.593 & 0.0405 [0.0327, 0.0477] & DAG-aware & 0.0301 [0.0255, 0.0414] & 25.8 & 23.7 \\
+CSuite mixed Simpson & 20 & native outcome units & 0.727 & 0.491 [0.434, 0.601] & DAG-aware & 0.133 [0.113, 0.153] & 72.9 & 72 \\
+CSuite mixed Simpson & 50 & native outcome units & 0.727 & 0.445 [0.293, 0.523] & DAG-aware & 0.0742 [0.0518, 0.0886] & 83.3 & 80.8 \\
+CSuite mixed Simpson & 100 & native outcome units & 0.727 & 0.192 [0.158, 0.235] & DAG-aware & 0.0677 [0.052, 0.0762] & 64.8 & 68.7 \\
+CSuite mixed Simpson & 200 & native outcome units & 0.727 & 0.094 [0.0721, 0.104] & DAG-aware & 0.0496 [0.0357, 0.0637] & 47.2 & 49.1 \\
+CSuite mixed Simpson & 500 & native outcome units & 0.727 & 0.0705 [0.0533, 0.0989] & DAG-aware & 0.0496 [0.0372, 0.0659] & 29.7 & 40.6 \\
+CSuite mixed Simpson & 1000 & native outcome units & 0.727 & 0.081 [0.0541, 0.101] & DAG-aware & 0.0565 [0.0424, 0.0664] & 30.2 & 23.8 \\
+CSuite mixed confounding & 20 & native outcome units & 1.03 & 0.389 [0.282, 0.454] & DAG-aware & 0.479 [0.411, 0.558] & -23.1 & -15.3 \\
+CSuite mixed confounding & 50 & native outcome units & 1.03 & 0.173 [0.137, 0.217] & DAG-aware & 0.105 [0.0899, 0.136] & 39.2 & 20.5 \\
+CSuite mixed confounding & 100 & native outcome units & 1.03 & 0.129 [0.0984, 0.155] & DAG-aware & 0.0873 [0.0575, 0.113] & 32.2 & 22.5 \\
+CSuite mixed confounding & 200 & native outcome units & 1.03 & 0.0926 [0.0766, 0.116] & DAG-aware & 0.0554 [0.0398, 0.0733] & 40.2 & 35.3 \\
+CSuite mixed confounding & 500 & native outcome units & 1.03 & 0.0894 [0.0709, 0.101] & DAG-aware & 0.0453 [0.0371, 0.0584] & 49.3 & 40.7 \\
+CSuite mixed confounding & 1000 & native outcome units & 1.03 & 0.0701 [0.0629, 0.0878] & DAG-aware & 0.0527 [0.041, 0.0609] & 24.8 & 30.8 \\
+CSuite nonlinear Simpson & 20 & native outcome units & 1.96 & 0.73 [0.542, 0.998] & DAG-aware & 0.289 [0.218, 0.353] & 60.4 & 60.8 \\
+CSuite nonlinear Simpson & 50 & native outcome units & 1.96 & 0.419 [0.329, 0.521] & DAG-aware & 0.123 [0.102, 0.153] & 70.7 & 68.3 \\
+CSuite nonlinear Simpson & 100 & native outcome units & 1.96 & 0.278 [0.245, 0.322] & DAG-aware & 0.101 [0.0776, 0.121] & 63.7 & 65.6 \\
+CSuite nonlinear Simpson & 200 & native outcome units & 1.96 & 0.178 [0.136, 0.246] & DAG-aware & 0.142 [0.103, 0.178] & 20.1 & 30.1 \\
+CSuite nonlinear Simpson & 500 & native outcome units & 1.96 & 0.129 [0.0795, 0.152] & DAG-aware & 0.126 [0.0967, 0.157] & 2.18 & 0.626 \\
+CSuite nonlinear Simpson & 1000 & native outcome units & 1.96 & 0.106 [0.0783, 0.142] & DAG-aware & 0.0519 [0.0416, 0.0665] & 50.8 & 47.3 \\
+CSuite symprod Simpson & 20 & native outcome units & 0.0371 & 0.212 [0.169, 0.252] & DAG-aware & 0.262 [0.175, 0.359] & -23.4 & -23 \\
+CSuite symprod Simpson & 50 & native outcome units & 0.0371 & 0.237 [0.183, 0.294] & DAG-aware & 0.219 [0.162, 0.275] & 7.87 & -5.96 \\
+CSuite symprod Simpson & 100 & native outcome units & 0.0371 & 0.137 [0.12, 0.178] & DAG-aware & 0.151 [0.117, 0.191] & -10.4 & -5.07 \\
+CSuite symprod Simpson & 200 & native outcome units & 0.0371 & 0.0901 [0.0796, 0.111] & DAG-aware & 0.0849 [0.0667, 0.115] & 5.71 & 0.627 \\
+CSuite symprod Simpson & 500 & native outcome units & 0.0371 & 0.0673 [0.0545, 0.0748] & DAG-aware & 0.0458 [0.0373, 0.0576] & 32 & 27.9 \\
+CSuite symprod Simpson & 1000 & native outcome units & 0.0371 & 0.0577 [0.0525, 0.0732] & DAG-aware & 0.0446 [0.0296, 0.063] & 22.7 & 21.1 \\
+CSuite weak arrows & 20 & native outcome units & 1.08 & 0.491 [0.384, 0.609] & DAG-aware & 0.523 [0.395, 0.631] & -6.54 & -1.91 \\
+CSuite weak arrows & 50 & native outcome units & 1.08 & 0.144 [0.106, 0.19] & DAG-aware & 0.152 [0.115, 0.174] & -5.37 & 6.95 \\
+CSuite weak arrows & 100 & native outcome units & 1.08 & 0.1 [0.0805, 0.123] & DAG-aware & 0.0901 [0.0752, 0.124] & 10.1 & -3 \\
+CSuite weak arrows & 200 & native outcome units & 1.08 & 0.0779 [0.0556, 0.0977] & DAG-aware & 0.0853 [0.0701, 0.0982] & -9.55 & -8.98 \\
+CSuite weak arrows & 500 & native outcome units & 1.08 & 0.0605 [0.0469, 0.0685] & DAG-aware & 0.0454 [0.035, 0.0527] & 25 & 21.3 \\
+CSuite weak arrows & 1000 & native outcome units & 1.08 & 0.0274 [0.0206, 0.0361] & DAG-aware & 0.0352 [0.0284, 0.0399] & -28.6 & -17.1 \\
+Custom SCM & 20 & SCM outcome units & 4.98 & 1.23 [1.06, 1.53] & DAG-aware & 0.186 [0.154, 0.222] & 84.8 & 87.7 \\
+Custom SCM & 50 & SCM outcome units & 4.98 & 1.15 [0.93, 1.37] & DAG-aware & 0.183 [0.133, 0.249] & 84.1 & 83.1 \\
+Custom SCM & 100 & SCM outcome units & 4.98 & 0.826 [0.648, 0.909] & DAG-aware & 0.163 [0.115, 0.201] & 80.3 & 78.4 \\
+Custom SCM & 200 & SCM outcome units & 4.98 & 0.343 [0.28, 0.499] & DAG-aware & 0.162 [0.12, 0.198] & 52.8 & 58.5 \\
+Custom SCM & 500 & SCM outcome units & 4.98 & 0.274 [0.237, 0.348] & DAG-aware & 0.152 [0.117, 0.185] & 44.6 & 53.6 \\
+Custom SCM & 1000 & SCM outcome units & 4.98 & 0.243 [0.197, 0.31] & DAG-aware & 0.151 [0.115, 0.175] & 37.6 & 52.4 \\
+SimGlucose & 20 & mg/dL & 2.29 & 84.9 [63.9, 109] & Vanilla topological & 50.7 [43.8, 63.8] & 40.3 & 38 \\
+SimGlucose & 50 & mg/dL & 2.29 & 65.2 [45.1, 81.4] & Vanilla topological & 64.4 [44.3, 75.2] & 1.13 & 16.3 \\
+SimGlucose & 100 & mg/dL & 2.29 & 79 [69, 99.8] & Vanilla topological & 51.8 [46.2, 67.4] & 34.4 & 14.7 \\
+SimGlucose & 200 & mg/dL & 2.29 & 58.9 [46.3, 66.9] & Vanilla topological & 23.9 [18.4, 28.4] & 59.5 & 58 \\
+SimGlucose & 500 & mg/dL & 2.29 & 39.6 [31.7, 50.4] & Vanilla topological & 15.9 [13, 21.6] & 59.7 & 62.7 \\
+SimGlucose & 1000 & mg/dL & 2.29 & 43.5 [35.5, 46.8] & Vanilla topological & 28.1 [20.1, 33.7] & 35.6 & 23.5 \\
+\bottomrule
+\end{tabular}

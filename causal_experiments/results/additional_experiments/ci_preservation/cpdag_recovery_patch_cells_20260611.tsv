@@ -1,0 +1,12 @@
+dataset	sample_size	repetition
+csuite_large_backdoor	500	595
+csuite_large_backdoor	500	630
+csuite_large_backdoor	500	631
+csuite_large_backdoor	500	689
+csuite_mixed_confounding	20	99
+csuite_mixed_confounding	50	272
+csuite_mixed_confounding	100	398
+csuite_mixed_confounding	200	473
+csuite_mixed_confounding	500	670
+csuite_mixed_simpson	50	220
+csuite_weak_arrows	50	199

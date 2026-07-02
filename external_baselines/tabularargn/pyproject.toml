@@ -1,0 +1,17 @@
+[project]
+name = "tabularargn-baseline"
+version = "0.1.0"
+description = "External TabularARGN baseline for TabPFN causal synthetic data experiments."
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "mostlyai-engine==2.4.0",
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "matplotlib>=3.8",
+    "syntheval>=1.5",
+]
+
+[tool.uv]
+package = false

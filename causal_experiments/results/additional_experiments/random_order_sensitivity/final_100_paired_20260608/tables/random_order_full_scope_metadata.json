@@ -1,0 +1,31 @@
+{
+  "six_dataset_csv": "<demetra_workspace>/analysis/random_order_full_scope_20260608/source/random_order_patch_results_6datasets_long.csv",
+  "full_scope_root": "<demetra_workspace>/analysis/random_order_full_scope_20260608/source/full_scope",
+  "cleaned_root": "<demetra_workspace>/analysis/random_order_full_scope_20260608/source/cleaned",
+  "metrics": [
+    "correlation_matrix_difference",
+    "k_marginal_tvd",
+    "nnaa"
+  ],
+  "regular_scope": [
+    "custom_scm",
+    "csuite_large_backdoor",
+    "csuite_mixed_confounding",
+    "csuite_mixed_simpson",
+    "csuite_nonlin_simpson",
+    "csuite_symprod_simpson",
+    "csuite_weak_arrows"
+  ],
+  "paper_scope": [
+    "custom_scm",
+    "csuite_large_backdoor",
+    "csuite_mixed_confounding",
+    "csuite_mixed_simpson",
+    "csuite_nonlin_simpson",
+    "csuite_symprod_simpson",
+    "csuite_weak_arrows",
+    "simglucose"
+  ],
+  "pairing_rule": "exact same 100 canonical cleaned seeds for random, original, and comparator",
+  "simglucose_comparator": "vanilla_topological"
+}

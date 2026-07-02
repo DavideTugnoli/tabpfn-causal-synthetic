@@ -1,0 +1,49 @@
+Dataset,N,Units,Abs. ATE_test,Vanilla median abs. ATE error,Comparator,Comparator median abs. ATE error,HL diff (vanilla - comparator),Significant
+CSM,20,SCM outcome units,4.98,1.23,DAG-aware,0.186,1.2252784967422483,Y
+CSM,50,SCM outcome units,4.98,1.15,DAG-aware,0.183,1.0029163360595703,Y
+CSM,100,SCM outcome units,4.98,0.826,DAG-aware,0.163,0.648547296611655,Y
+CSM,200,SCM outcome units,4.98,0.343,DAG-aware,0.162,0.2684061527252198,Y
+CSM,500,SCM outcome units,4.98,0.274,DAG-aware,0.152,0.1396291470819672,Y
+CSM,1000,SCM outcome units,4.98,0.243,DAG-aware,0.151,0.1192739224725922,Y
+CMC,20,native outcome units,1.03,0.389,DAG-aware,0.479,-0.0630486086010932,Y
+CMC,50,native outcome units,1.03,0.173,DAG-aware,0.105,0.0370460599660873,Y
+CMC,100,native outcome units,1.03,0.129,DAG-aware,0.0873,0.0285944847147912,Y
+CMC,200,native outcome units,1.03,0.0926,DAG-aware,0.0554,0.0356811823565512,Y
+CMC,500,native outcome units,1.03,0.0894,DAG-aware,0.0453,0.0336732749380171,Y
+CMC,1000,native outcome units,1.03,0.0701,DAG-aware,0.0527,0.0230597200114279,Y
+CNS,20,native outcome units,1.96,0.73,DAG-aware,0.289,0.5253826975822449,Y
+CNS,50,native outcome units,1.96,0.419,DAG-aware,0.123,0.3365726895332336,Y
+CNS,100,native outcome units,1.96,0.278,DAG-aware,0.101,0.1985129542350768,Y
+CNS,200,native outcome units,1.96,0.178,DAG-aware,0.142,0.0683582425117492,Y
+CNS,500,native outcome units,1.96,0.129,DAG-aware,0.126,0.0042385332584381,N
+CNS,1000,native outcome units,1.96,0.106,DAG-aware,0.0519,0.0561915292739867,Y
+CSS,20,native outcome units,0.0371,0.212,DAG-aware,0.262,-0.0537918734168633,Y
+CSS,50,native outcome units,0.0371,0.237,DAG-aware,0.219,-0.0016723510613665,N
+CSS,100,native outcome units,0.0371,0.137,DAG-aware,0.151,-0.0068305104235187,N
+CSS,200,native outcome units,0.0371,0.0901,DAG-aware,0.0849,0.0013530268874019,N
+CSS,500,native outcome units,0.0371,0.0673,DAG-aware,0.0458,0.0200544523810967,Y
+CSS,1000,native outcome units,0.0371,0.0577,DAG-aware,0.0446,0.0126167353903874,N
+CMS,20,native outcome units,0.727,0.491,DAG-aware,0.133,0.3475883677601814,Y
+CMS,50,native outcome units,0.727,0.445,DAG-aware,0.0742,0.3299052429497242,Y
+CMS,100,native outcome units,0.727,0.192,DAG-aware,0.0677,0.144761690288782,Y
+CMS,200,native outcome units,0.727,0.094,DAG-aware,0.0496,0.0511301606893539,Y
+CMS,500,native outcome units,0.727,0.0705,DAG-aware,0.0496,0.024182824999094,Y
+CMS,1000,native outcome units,0.727,0.081,DAG-aware,0.0565,0.0211288475543261,Y
+CWA,20,native outcome units,1.08,0.491,DAG-aware,0.523,-0.01178839802742,N
+CWA,50,native outcome units,1.08,0.144,DAG-aware,0.152,0.0065864324569702,N
+CWA,100,native outcome units,1.08,0.1,DAG-aware,0.0901,-0.000419333577156,N
+CWA,200,native outcome units,1.08,0.0779,DAG-aware,0.0853,-0.0056534817717037,N
+CWA,500,native outcome units,1.08,0.0605,DAG-aware,0.0454,0.0124257504940032,N
+CWA,1000,native outcome units,1.08,0.0274,DAG-aware,0.0352,-0.0056235453388653,N
+CLB,20,native outcome units,0.593,0.402,DAG-aware,0.328,0.0336241275072097,Y
+CLB,50,native outcome units,0.593,0.271,DAG-aware,0.221,0.0432988665997982,Y
+CLB,100,native outcome units,0.593,0.14,DAG-aware,0.111,0.0300480127334595,Y
+CLB,200,native outcome units,0.593,0.0961,DAG-aware,0.0782,0.0072462752034771,N
+CLB,500,native outcome units,0.593,0.0556,DAG-aware,0.0533,0.0044318183829891,N
+CLB,1000,native outcome units,0.593,0.0405,DAG-aware,0.0301,0.0086982890536892,N
+SGL,20,mg/dL,2.29,84.9,Vanilla topological,50.7,31.289304025955342,Y
+SGL,50,mg/dL,2.29,65.2,Vanilla topological,64.4,14.945569284744412,N
+SGL,100,mg/dL,2.29,79.0,Vanilla topological,51.8,23.232968791351027,Y
+SGL,200,mg/dL,2.29,58.9,Vanilla topological,23.9,34.44551347892747,Y
+SGL,500,mg/dL,2.29,39.6,Vanilla topological,15.9,24.29961416725115,Y
+SGL,1000,mg/dL,2.29,43.5,Vanilla topological,28.1,9.060518972091526,Y

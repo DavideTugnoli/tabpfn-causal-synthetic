@@ -1,0 +1,10 @@
+tabpfn_method,metric,cells,tabpfn_better_cells,tabularargn_better_cells,tied_cells,median_of_cellwise_differences
+TabPFN DAG-aware,CMD,25,25,0,0,2.117536299484252
+TabPFN vanilla original,CMD,25,25,0,0,2.0595191742281647
+TabPFN vanilla topological,CMD,25,25,0,0,2.0854127548398544
+TabPFN DAG-aware,NNAA |x-0.5|,25,25,0,0,0.3610000000000001
+TabPFN vanilla original,NNAA |x-0.5|,25,25,0,0,0.35775
+TabPFN vanilla topological,NNAA |x-0.5|,25,25,0,0,0.36099999999999993
+TabPFN DAG-aware,kMTVD,25,25,0,0,0.29825
+TabPFN vanilla original,kMTVD,25,25,0,0,0.29450000000000004
+TabPFN vanilla topological,kMTVD,25,25,0,0,0.2964166666666668

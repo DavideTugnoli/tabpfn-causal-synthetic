@@ -1,0 +1,9 @@
+baseline,metric,n,vanilla_better,causaldifftab_better,ties,median_vanilla,median_causaldifftab
+vanilla_original,correlation_matrix_difference,500,322,178,0,0.207650932570149,0.2696652734176897
+vanilla_original,k_marginal_tvd,500,488,12,0,0.22841666666666666,0.2875
+vanilla_original,nnaa,500,500,0,0,0.51725,0.637375
+vanilla_original,nnaa_abs_dist_0p5,500,500,0,0,0.017249999999999988,0.13737500000000002
+vanilla_topological,correlation_matrix_difference,500,414,86,0,0.11795089576622886,0.2696652734176897
+vanilla_topological,k_marginal_tvd,500,494,6,0,0.2253333333333333,0.2875
+vanilla_topological,nnaa,500,500,0,0,0.513,0.637375
+vanilla_topological,nnaa_abs_dist_0p5,500,500,0,0,0.01337499999999997,0.13737500000000002

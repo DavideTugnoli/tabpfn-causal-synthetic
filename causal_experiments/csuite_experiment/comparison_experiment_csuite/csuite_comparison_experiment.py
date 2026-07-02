@@ -305,8 +305,10 @@ def main(
     algorithm_filter: str | None = None,
     column_order_filter: str | None = None,
     repetitions: int | None = None,
+    train_sizes: list[int] | None = None,
     train_sizes_group: str | None = None,
     skip_seeds: list[int] | None = None,
+    only_seeds: list[int] | None = None,
 ):
     """Main experimental pipeline.
     
@@ -320,24 +322,36 @@ def main(
         algorithm_filter: If provided, run only the specified algorithm (vanilla, dag, cpdag_v1_both_vanilla_*)
         column_order_filter: If provided, run only the specified column ordering for vanilla (original, topological, worst)
         skip_seeds: Explicit seed values to skip (their repetitions are skipped and replacements are sampled to maintain total repetitions)
+        only_seeds: Explicit seed values to run after constructing the full seed schedule.
     """
     # ======================
     # EXPERIMENTAL PARAMETERS
     # ======================
 
     if test_mode:
+        ALL_TRAIN_SIZES_ORDERED = [20, 50]
         TRAIN_SIZES = [20, 50]
         TEST_SIZE = 100
         # Small default in test mode unless overridden
         N_REPETITIONS = repetitions if repetitions is not None else 2
     else:
+        ALL_TRAIN_SIZES_ORDERED = [20, 50, 100, 200, 500]
         TRAIN_SIZES = [20, 50, 100, 200, 500]
         TEST_SIZE = 2000
         # Default repetitions for full runs (can be overridden)
         N_REPETITIONS = repetitions if repetitions is not None else 150
 
-    # Optional: restrict to small/large train-size groups (helps stay under 24h)
-    if train_sizes_group:
+    # Optional: restrict train sizes while preserving the seed schedule from the full run.
+    if train_sizes is not None:
+        requested_train_sizes = sorted(set(train_sizes))
+        invalid_sizes = [ts for ts in requested_train_sizes if ts not in ALL_TRAIN_SIZES_ORDERED]
+        if invalid_sizes:
+            raise ValueError(
+                f"Invalid train sizes {invalid_sizes}; expected subset of {ALL_TRAIN_SIZES_ORDERED}"
+            )
+        TRAIN_SIZES = sorted(requested_train_sizes, key=ALL_TRAIN_SIZES_ORDERED.index)
+        print(f" Custom train sizes requested: {TRAIN_SIZES}")
+    elif train_sizes_group:
         group_small = [20, 50, 100]
         group_large = [200, 500]
         if train_sizes_group == "small":
@@ -362,49 +376,67 @@ def main(
     if skip_seeds_set:
         print(f"  Requested skip seeds: {sorted(skip_seeds_set)}")
 
-    # Linear seed sequence - create mapping across ALL experiments
-    total_datasets_needed = len(TRAIN_SIZES) * N_REPETITIONS
-    selected_seeds: list[int] = []
+    # Linear seed sequence over the complete train-size schedule, even when this
+    # job only executes a subset. This preserves pairing with the full paper run.
+    train_size_to_seeds: dict[int, list[int]] = {ts: [] for ts in TRAIN_SIZES}
     skipped_schedule: list[tuple[int, int]] = []
 
     linear_seed = 0  # Start from 0, increment linearly
-    while len(selected_seeds) < total_datasets_needed:
-        if linear_seed in skip_seeds_set:
-            skipped_schedule.append((linear_seed, len(selected_seeds) + 1))
+    schedule_position = 0
+    for schedule_train_size in ALL_TRAIN_SIZES_ORDERED:
+        for _rep_idx in range(N_REPETITIONS):
+            while linear_seed in skip_seeds_set:
+                skipped_schedule.append((linear_seed, schedule_position + 1))
+                linear_seed += 1
+            if schedule_train_size in train_size_to_seeds:
+                train_size_to_seeds[schedule_train_size].append(linear_seed)
             linear_seed += 1
-            continue
-        selected_seeds.append(linear_seed)
-        linear_seed += 1
+            schedule_position += 1
 
     if skipped_schedule:
         for seed_value, repetition_idx in skipped_schedule:
             print(f"   • Skipping seed {seed_value} (would have been experiment {repetition_idx})")
-        if selected_seeds:
-            print(
-                f"  Effective seed schedule covers {len(selected_seeds)} experiments: "
-                f"first={selected_seeds[0]} last={selected_seeds[-1]}"
+
+    print("  Linear seed allocation per train size:")
+    for ts in TRAIN_SIZES:
+        seeds = train_size_to_seeds[ts]
+        if seeds:
+            print(f"   train_size={ts}: {len(seeds)} seeds (range {seeds[0]}-{seeds[-1]})")
+
+    if only_seeds is not None:
+        only_seeds_set = set(int(seed) for seed in only_seeds)
+        print(f"  Restricting execution to explicit seeds: {sorted(only_seeds_set)}")
+        for ts in list(train_size_to_seeds):
+            train_size_to_seeds[ts] = [
+                seed for seed in train_size_to_seeds[ts] if seed in only_seeds_set
+            ]
+        missing_only_seeds = sorted(
+            only_seeds_set - {seed for seeds in train_size_to_seeds.values() for seed in seeds}
+        )
+        if missing_only_seeds:
+            raise ValueError(
+                "Requested --only-seeds are not present in the selected train-size schedule: "
+                f"{missing_only_seeds}"
             )
-    else:
-        if selected_seeds:
-            print(
-                f"  Using linear seeds starting at 0 "
-                f"for {len(selected_seeds)} experiments"
-            )
+        print("  Explicit seed allocation per selected train size:")
+        for ts in TRAIN_SIZES:
+            print(f"   train_size={ts}: {train_size_to_seeds[ts]}")
 
     # Output configuration
     output_dir = Path("causal_experiments/csuite_experiment/comparison_experiment_csuite/results") / dataset_name
     output_dir.mkdir(parents=True, exist_ok=True)  # Create directory with dataset name
+    train_size_suffix = f"_ts{TRAIN_SIZES[0]}" if len(TRAIN_SIZES) == 1 else ""
     
     # Create unique output filename based on filters (no special v2 naming)
     if algorithm_filter and column_order_filter:
-        output_file = output_dir / f"csuite_{dataset_name}_{algorithm_filter}_{column_order_filter}_results.csv"
+        output_file = output_dir / f"csuite_{dataset_name}_{algorithm_filter}_{column_order_filter}_results{train_size_suffix}.csv"
     elif algorithm_filter:
-        output_file = output_dir / f"csuite_{dataset_name}_{algorithm_filter}_results.csv"
+        output_file = output_dir / f"csuite_{dataset_name}_{algorithm_filter}_results{train_size_suffix}.csv"
     elif column_order_filter:
         # When running all algorithms but a specific order globally, include the order in filename
-        output_file = output_dir / f"csuite_{dataset_name}_{column_order_filter}_results.csv"
+        output_file = output_dir / f"csuite_{dataset_name}_{column_order_filter}_results{train_size_suffix}.csv"
     else:
-        output_file = output_dir / f"csuite_{dataset_name}_results.csv"
+        output_file = output_dir / f"csuite_{dataset_name}_results{train_size_suffix}.csv"
 
 
     # ======================
@@ -724,17 +756,14 @@ def main(
     if max_train_size > len(full_train_df):
         raise ValueError(f"Requested max_train_size={max_train_size} but CSuite dataset only has {len(full_train_df)} samples")
     
-    print(f"Will generate {len(selected_seeds)} unique datasets using linear seeds")
+    total_selected_seeds = sum(len(seeds) for seeds in train_size_to_seeds.values())
+    print(f"Will generate {total_selected_seeds} unique datasets using linear seeds")
 
     # Linear mapping: create datasets with linear seed counter
     cached_datasets = 0
     regenerated_datasets = 0
-    linear_seed = 0
     for train_size in TRAIN_SIZES:
-        for rep_idx in range(N_REPETITIONS):
-            if linear_seed >= len(selected_seeds):
-                break
-            seed = selected_seeds[linear_seed]
+        for rep_idx, seed in enumerate(train_size_to_seeds[train_size]):
             seed_to_metadata[seed] = (train_size, rep_idx + 1)  # For logging
 
             dataset_file = datasets_dir / f"train_ts{train_size}_s{seed}.npz"
@@ -773,7 +802,6 @@ def main(
                     print(f"  Failed to load cached train set {dataset_file.name}: {exc}")
 
             if loaded_successfully:
-                linear_seed += 1
                 continue
 
             # Generate new dataset by sampling from CSuite with linear seed
@@ -806,10 +834,9 @@ def main(
                 train_dataset_paths[seed] = ""
 
             regenerated_datasets += 1
-            linear_seed += 1
 
-            if linear_seed % 20 == 0:
-                print(f"Processed {linear_seed} datasets...")
+            if (cached_datasets + regenerated_datasets) % 20 == 0:
+                print(f"Processed {cached_datasets + regenerated_datasets} datasets...")
 
     if cached_datasets:
         print(f"    Cached datasets loaded for {cached_datasets} seeds")
@@ -827,16 +854,9 @@ def main(
             # Extract column order name from tuple (order_indices pre-calculated but not used)
             column_order, _ = column_order_tuple
             
-            # Linear seed counter approach - use same seed sequence for all algorithms
-            linear_seed = 0  # Reset to 0 for each algorithm to ensure same seeds across algorithms
-
             for train_size in TRAIN_SIZES:
-                for rep_idx in range(N_REPETITIONS):
-                    if linear_seed >= len(selected_seeds):
-                        break
-                    seed = selected_seeds[linear_seed]
+                for rep_idx, seed in enumerate(train_size_to_seeds[train_size]):
                     repetition = rep_idx + 1  # 1-based repetition counter for this train_size
-                    linear_seed += 1  # Always move to next dataset
                     
                     # Skip if already completed
                     exp_key = (algorithm, column_order, train_size, seed)
@@ -1297,6 +1317,20 @@ if __name__ == "__main__":
         help="Seed values to skip; replacements are sampled so the total number of repetitions stays unchanged."
     )
     parser.add_argument(
+        "--only-seeds",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Run only these explicit seed values after preserving the full-run seed schedule.",
+    )
+    parser.add_argument(
+        "--train-sizes",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Run only these train sizes while preserving the full-run seed schedule.",
+    )
+    parser.add_argument(
         "--train-sizes-group", choices=["small", "large", "all"], default=None,
         help="Optionally restrict train sizes: small=[20,50,100], large=[200,500]."
     )
@@ -1334,6 +1368,8 @@ if __name__ == "__main__":
         algorithm_filter=args.algorithm,
         column_order_filter=getattr(args, 'column_order', None),
         repetitions=args.repetitions,
+        train_sizes=args.train_sizes,
         train_sizes_group=args.train_sizes_group,
         skip_seeds=args.skip_seeds,
+        only_seeds=args.only_seeds,
     )

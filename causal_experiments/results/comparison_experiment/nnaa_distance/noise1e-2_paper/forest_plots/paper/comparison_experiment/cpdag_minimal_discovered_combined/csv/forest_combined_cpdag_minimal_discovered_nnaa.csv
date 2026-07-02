@@ -1,0 +1,11 @@
+dataset,train_size,effect,ci_lower,ci_upper,p_value,p_holm,metric,comparison,is_significant
+custom_scm_noise1e-2,20,0.01,0.00575,0.0148749999999999,2.1795638043545365e-07,1.0897819021772682e-06,nnaa,vanilla_vs_cpdag_minimal,True
+custom_scm_noise1e-2,50,0.005,0.001375,0.008625,0.0004004464066567,0.0024026784399406,nnaa,vanilla_vs_cpdag_minimal,True
+custom_scm_noise1e-2,100,0.0019999999999998,-0.0017499999999999,0.0054999999999999,0.1383583249343059,0.4925417752438348,nnaa,vanilla_vs_cpdag_minimal,False
+custom_scm_noise1e-2,200,0.0015,-0.0014999999999999,0.0045,0.1632418142144004,0.6529672568576017,nnaa,vanilla_vs_cpdag_minimal,False
+custom_scm_noise1e-2,500,0.001125,-0.001375,0.0036249999999999,0.2268142461289242,0.8156590989675165,nnaa,vanilla_vs_cpdag_minimal,False
+custom_scm_noise1e-2,20,0.0,0.0,0.0,0.0832750040512064,0.0832750040512064,nnaa,vanilla_vs_cpdag_discovered,False
+custom_scm_noise1e-2,50,0.0,0.0,0.0,0.0081645275289628,0.0244935825868886,nnaa,vanilla_vs_cpdag_discovered,False
+custom_scm_noise1e-2,100,0.0,0.0,0.0,0.0455141763149142,0.2730850578894855,nnaa,vanilla_vs_cpdag_discovered,False
+custom_scm_noise1e-2,200,0.0,-0.1707499999999999,0.0,0.0015731036997465,0.0094386221984791,nnaa,vanilla_vs_cpdag_discovered,False
+custom_scm_noise1e-2,500,0.0,-0.15825,0.0,0.0027094242270055,0.0162565453620331,nnaa,vanilla_vs_cpdag_discovered,False

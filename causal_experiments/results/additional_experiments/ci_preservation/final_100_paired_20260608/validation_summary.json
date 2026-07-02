@@ -1,0 +1,10 @@
+{
+  "comparison_cells": 40,
+  "interventional_cells": 54,
+  "patched_comparison_rows": 11,
+  "valid_cells": 94,
+  "total_cells": 94,
+  "all_cells_valid": true,
+  "cells_with_documented_undefined_reference": 2,
+  "documented_undefined_reference_rows": 10
+}
