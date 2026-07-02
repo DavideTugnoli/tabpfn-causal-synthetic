@@ -132,7 +132,7 @@ def plot_summary(summary: pd.DataFrame) -> None:
 
     for noise in sorted(summary["noise_level"].unique()):
         subset = summary[summary["noise_level"] == noise].sort_values("train_size")
-        label = f"noise={noise:g}"
+        label = r"$\sigma=0.2$ (CSMr)" if float(noise) == 0.2 else rf"$\sigma={noise:g}$"
         axes[0].errorbar(
             subset["train_size"],
             subset["cmd_hl_vanilla_minus_cpdag"],
