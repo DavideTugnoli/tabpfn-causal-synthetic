@@ -1236,11 +1236,10 @@ def plot_forest(
         if single_column:
             title_text = f"{comparison.baseline_label} vs {comparison.comparator_label}\n{title_metric}"
         else:
-            title_text = f"{comparison.title} · {title_metric}"
-            # Wrap long titles onto two lines so they stay inside the canvas
-            # (e.g. the |NNAA - 0.5| metric name is too long for one line).
-            if len(title_text) > 80:
-                title_text = f"{comparison.title}\n{title_metric}"
+            # Always two lines (comparison on top, metric below) so every single
+            # plot follows the same title convention as the interventional/ATE and
+            # single-column plots, regardless of metric-name length.
+            title_text = f"{comparison.title}\n{title_metric}"
         ax.set_title(title_text, fontsize=title_fs, pad=AXES_TITLE_PAD)
 
         handles = [legend_entries[ts] for ts in train_sizes if ts in legend_entries]
