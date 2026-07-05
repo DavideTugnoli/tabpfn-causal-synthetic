@@ -932,7 +932,7 @@ def render_forest_panel(
             marker_face = color if is_significant else "white"
 
             first_entry = ts not in legend_entries
-            label = f"Train {ts}" if first_entry else "_nolegend_"
+            label = f"{ts}" if first_entry else "_nolegend_"
             handle = ax.errorbar(
                 effect,
                 y_pos,
