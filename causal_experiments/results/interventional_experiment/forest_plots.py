@@ -982,7 +982,7 @@ def plot_forest(
                     legend_fontsize = max(LEGEND_FONT_SIZE - 2, 12)
                     legend_title_fontsize = max(LEGEND_TITLE_FONT_SIZE - 2, 12)
                     legend_columnspacing = 0.8
-                    legend_handletextpad = 0.5
+                    legend_handletextpad = 0.15
 
                 legend_bbox = (0.5, legend_y_anchor)
                 legend_transform = ax.transAxes

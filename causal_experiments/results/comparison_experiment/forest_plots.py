@@ -1267,7 +1267,7 @@ def plot_forest(
             legend_fontsize = max(legend_fs - 2, 10)
             legend_title_fontsize = max(legend_fs - 2, 10)
             legend_columnspacing = 0.8
-            legend_handletextpad = 0.5
+            legend_handletextpad = 0.15
             if single_column:
                 legend_y_anchor = -0.21
                 single_bottom_margin = max(single_bottom_margin, 0.31)

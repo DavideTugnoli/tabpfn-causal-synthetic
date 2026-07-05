@@ -61,7 +61,7 @@ MARKER_EDGEWIDTH_LEGEND = 0.8  # Edge width for legend markers
 # Legend spacing
 LEGEND_COLUMNSPACING_SINGLE = 1.4  # Column spacing in legend for single plots
 LEGEND_COLUMNSPACING_COMBINED = 1.8  # Column spacing in legend for combined plots
-LEGEND_HANDLETEXTPAD = 0.8  # Spacing between legend handle and text
+LEGEND_HANDLETEXTPAD = 0.15  # Spacing between legend handle and text
 
 # Layout constants
 AXES_TITLE_PAD = 22  # Padding between title and axes
